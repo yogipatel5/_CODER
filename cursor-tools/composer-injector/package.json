@@ -1,0 +1,27 @@
+{
+  "name": "composer-injector",
+  "displayName": "Composer Injector",
+  "description": "Clicks a button in the Composer window.",
+  "version": "1.0.0",
+  "publisher": "vscode-composer-injector",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "activationEvents": [
+    "onCommand:composerInjector.inject",
+    "onCommand:composerInjector.submit"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "composerInjector.inject",
+        "title": "Inject Custom Code"
+      },
+      {
+        "command": "composerInjector.submit",
+        "title": "Submit Composer"
+      }
+    ]
+  }
+}

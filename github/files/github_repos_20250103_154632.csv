@@ -1,0 +1,34 @@
+name,url,description,visibility,action
+flavorgod_company,https://github.com/yogipatel5/flavorgod_company,Flavorgod Company Dashboard,PRIVATE,update
+google-suites,https://github.com/yogipatel5/google-suites,Google: The Google Suites Management & Cleanup,PRIVATE,update
+bettors-peg,https://github.com/yogipatel5/bettors-peg,Bettors: Front End Pegasus,PRIVATE,update
+alfie,https://github.com/yogipatel5/alfie,,PRIVATE,remove
+messageserver,https://github.com/yogipatel5/messageserver,Message server running on MacBook laptop for SMS functionality,PRIVATE,update
+devin,https://github.com/yogipatel5/devin,,PRIVATE,remove
+docs,https://github.com/yogipatel5/docs,Not Sure what This is?,PUBLIC,update
+ebay_django,https://github.com/yogipatel5/ebay_django,Ebay: Django Setup,PRIVATE,update
+sms-gateway-app,https://github.com/yogipatel5/sms-gateway-app,Android App to facilitate sms and mms over ADB,PRIVATE,update
+fg-apps,https://github.com/yogipatel5/fg-apps,Flavorgod: Google App Scripts,PUBLIC,update
+bettors,https://github.com/yogipatel5/bettors,Bettors: Backend Server - Api.bettors.ai,PRIVATE,update
+FG-DB-temp,https://github.com/yogipatel5/FG-DB-temp,Flavorgod DB Queries,PRIVATE,remove
+ebay-gapps,https://github.com/yogipatel5/ebay-gapps,Ebay: Google Apps Scripts ,PRIVATE,update
+ha,https://github.com/yogipatel5/ha,HomeAssistant: My Home assistant,PRIVATE,update
+proxmox_helpers,https://github.com/yogipatel5/proxmox_helpers,LXC - Another Helper for Server,PRIVATE,update
+django_starter,https://github.com/yogipatel5/django_starter,Template: This is the django starter template,PRIVATE,update
+project,https://github.com/yogipatel5/project,Project Management and Tracking Repository,PRIVATE,update
+server-setup,https://github.com/yogipatel5/server-setup,LXC - This might be a deuplicate of linux-helper,PRIVATE,update
+ansible_server,https://github.com/yogipatel5/ansible_server,,PRIVATE,remove
+ebay_api,https://github.com/yogipatel5/ebay_api,Ebay: This is a alpha test mvp,PRIVATE,update
+bettors_peg_update-2-23,https://github.com/yogipatel5/bettors_peg_update-2-23,Bettors: This is a clone to keep the updates.,PRIVATE,remove
+bettors-full,https://github.com/yogipatel5/bettors-full,"Bettors: I think this can be removed, but for now keep. ",PRIVATE,update
+bettors-chat,https://github.com/yogipatel5/bettors-chat,,PRIVATE,remove
+tools,https://github.com/yogipatel5/tools,Mac: ZSHRC and Aliases,PRIVATE,update
+linux-helper,https://github.com/yogipatel5/linux-helper,LXC - Setup Scripts,PUBLIC,update
+WHS-DB,https://github.com/yogipatel5/WHS-DB,DataGrip: Shipbreeze DB Queries,PRIVATE,update
+FG-DB,https://github.com/yogipatel5/FG-DB,DataGrip: Flavorgod DB Queries ,PUBLIC,update
+tutorial,https://github.com/yogipatel5/tutorial,,PRIVATE,remove
+OddsJam,https://github.com/yogipatel5/OddsJam,,PUBLIC,remove
+svg-ps-converters,https://github.com/yogipatel5/svg-ps-converters,Tools for Exporting into SVG Tiny Portable/Secure Format,PUBLIC,update
+scss-lint,https://github.com/yogipatel5/scss-lint,Configurable tool for writing clean and consistent SCSS,PUBLIC,keep
+guzzle,https://github.com/yogipatel5/guzzle,"Guzzle, an extensible PHP HTTP client",PUBLIC,keep
+test,https://github.com/yogipatel5/test,,PUBLIC,keep

@@ -1,0 +1,123 @@
+# Edit Zsh configuration with TextMate
+alias zshconfig="code ~/.zshrc"
+
+# Edit Oh My Zsh configuration in VS Code
+alias ohmyzsh="code ~/.oh-my-zsh"
+
+# Backup the .zshrc file
+alias backupzshrc='cp ~/.zshrc ~/.zshrc.backup.$(date +%F-%T)'
+
+# Reload the .zshrc file
+alias rel='echo -e "\e[1;32mReloading .zshrc...\e[0m" && source ~/.zshrc'
+alias reload='echo -e "\e[1;32mReloading .zshrc...\e[0m" && source ~/.zshrc;clear'
+alias cls='clear'
+
+# Open Project Folder in VS Code and Activate Conda Environment
+function app() {
+    local project_name=$1
+    conda activate "$project_name" && cd ~/code/"$project_name" && code .
+}
+
+# Install packages from requirements.txt
+alias pipreq="pip install -r requirements.txt"
+
+# Basic directory operations
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Navigate up the directory tree
+alias ..='cd ..'
+alias ...='cd ../../'
+alias ....='cd ../../../'
+alias .....='cd ../../../../'
+alias '../'='cd -'
+
+
+# Create a directory and move into it
+function mkcd() { mkdir -p "$@" && cd "$_"; }
+
+# Get public IP address
+alias myip='curl ipinfo.io/ip'
+
+# Django Aliases
+alias dja="echo $'\\033[1;33mDjango Aliases:\\033[0m\n\
+\\033[1;32mServer Commands:\\033[0m\n\
+\\033[1;33m- djrun:\\033[0m Start Django server\n\
+\\033[1;33m- djcheck:\\033[0m Check for problems in Django project\n\
+\\033[1;33m- djh:\\033[0m Display Django management help\n\n\
+\\033[1;32mDatabase Commands:\\033[0m\n\
+\\033[1;33m- djm:\\033[0m Apply database migrations\n\
+\\033[1;33m- djmm:\\033[0m Make new database migrations\n\
+\\033[1;33m- djf:\\033[0m Flush the database\n\n\
+\\033[1;32mApp and Static Files Commands:\\033[0m\n\
+\\033[1;33m- djstart:\\033[0m Create a new Django app\n\
+\\033[1;33m- djcs:\\033[0m Collect static files\n\n\
+\\033[1;32mTesting and Shell Commands:\\033[0m\n\
+\\033[1;33m- djrt:\\033[0m Run Django tests\n\
+\\033[1;33m- djshell:\\033[0m Open Django Python shell'"
+
+alias af= "alias-finder"
+alias edita="code ~/Code/tools/shared_aliases.sh"
+
+alias pylintfix="pylint --generate-rcfile > .pylintrc"
+
+alias djrun="python manage.py runserver"
+alias djstart="python manage.py startapp"
+alias djm="python manage.py migrate"
+alias djmm="python manage.py makemigrations"
+alias djshell="python manage.py shell"
+alias djcheck="python manage.py check"
+alias djsuper="python manage.py createsuperuser"
+alias djh="python manage.py help"
+alias djf="python manage.py flush"
+alias djcs="python manage.py collectstatic"
+alias djrt="python manage.py test"
+
+alias gs="git status"
+alias ga="git add"
+alias gaa="git add ."
+alias gc="git commit"
+alias gcm="git commit -m"
+alias gp="git push"
+alias gpl="git pull"
+alias gb="git branch"
+alias gco="git checkout"
+alias gd="git diff"
+alias gl="git log"
+alias gcl="git clone"
+alias gr="git remote"
+alias grv="git remote -v"
+alias gg="git grep"
+
+alias editalias="code ~/Code/tools/shared_aliases.sh"
+alias cll="conda env list"
+alias ca="conda activate"
+alias ci="conda install"
+alias cload="conda_auto_env"
+alias ce="conda env export > environment.yml"
+alias cdel="conda env remove --name"
+alias startbettors="conda activate bettors;cd ~/Code/bettors;export DJANGO_SETTINGS_MODULE=bettordjango.settings;django-admin runserver"
+
+alias bettors="cd ~/Code/bettors; conda activate bettors"
+alias codedir="cd ~/Code/; ll"
+# export DJANGO_SETTINGS_MODULE=bettordjango.settings
+
+alias cworker="celery -A bettordjacelery -A bettordjango worker -l info"
+alias cscheduler="celery -A bettordjango beat -l info"
+
+alias wakepc="wakeonlan -i 10.16.1.57 a8:a1:59:4a:e5:a5"
+
+alias dstart="python manage.py "
+alias manage="python manage.py "
+
+# Nginx Aliases
+alias nginx-start='brew services start nginx'           # Start Nginx
+alias nginx-stop='brew services stop nginx'             # Stop Nginx
+alias nginx-restart='brew services restart nginx'       # Restart Nginx
+alias nginx-status='brew services list | grep nginx'    # Check Nginx Status
+alias nginx-edit='code /opt/homebrew/etc/nginx/nginx.conf' # Edit Nginx Configuration
+alias nginx-edit-test='nginx -t'                        # Test Nginx Configuration
+alias nginx-logs='cd /Users/yp/nginx_logs;code .'       # Access Nginx Logs
+
+alias configedit='cursor ~/.ssh/config'

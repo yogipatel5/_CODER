@@ -1,0 +1,30 @@
+{
+  "javascript.preferences.sourceMap": false,
+  "debug.javascript.autoAttachFilter": "always",
+  "debug.javascript.terminalOptions": {
+    "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.trunk/*actions/": true,
+    "**/.trunk/*logs/": true,
+    "**/.trunk/*notifications/": true,
+    "**/.trunk/*out/": true,
+    "**/.trunk/*plugins/": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.coverage": true,
+    "**/.mypy_cache": true,
+    "**/.ipynb_checkpoints": true,
+    "/backups": true,
+    "backups": true,
+    "**/*.js.map": true
+  },
+  "hide-files.files": []
+}

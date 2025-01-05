@@ -1,0 +1,57 @@
+name,path,is_git,remote_url,branch,has_changes,last_modified,size_mb,action
+Devin,/Users/yp/Code/Devin,True,No remote URL,develop,False,2024-12-27 14:58:26,207.12629413604736,keep
+openai-API,/Users/yp/Code/openai-API,True,https://github.com/Kouidersif/openai-API,sif,True,2024-01-22 00:38:01,0.37204456329345703,keep
+yp-api,/Users/yp/Code/yp-api,False,,,False,2023-11-26 02:32:57,0.0,keep
+company_assets,/Users/yp/Code/company_assets,False,,,False,2024-01-05 01:56:36,0.43471813201904297,keep
+SuperAGI,/Users/yp/Code/SuperAGI,True,https://github.com/TransformerOptimus/SuperAGI.git,main,True,2025-01-03 14:21:04,69.82819557189941,keep
+crewai,/Users/yp/Code/crewai,False,,,False,2025-01-02 18:01:05,137.12491416931152,keep
+maker_bot,/Users/yp/Code/maker_bot,False,,,False,2023-11-19 01:05:46,132.98291397094727,keep
+fanduel-api,/Users/yp/Code/fanduel-api,True,https://github.com/RK-GEEKSDOBYTE/fanduel-api.git,master,True,2024-03-14 02:17:52,0.35218143463134766,keep
+tools,/Users/yp/Code/tools,False,,,False,2024-09-19 13:46:23,8948.346881866455,keep
+docker,/Users/yp/Code/docker,True,https://github.com/mattermost/docker,main,True,2024-03-14 02:17:52,0.18594074249267578,keep
+ebay-app,/Users/yp/Code/ebay-app,True,https://github.com/yogipatel5/ebay-gapps.git,main,True,2024-12-16 13:33:47,0.5532817840576172,keep
+roop-main,/Users/yp/Code/roop-main,False,,,False,2024-03-14 02:17:52,3.300386428833008,keep
+VirtualBox VMs,/Users/yp/Code/VirtualBox VMs,False,,,False,2024-03-14 03:12:35,0.3199043273925781,keep
+app.wehandleship.com,/Users/yp/Code/app.wehandleship.com,True,https://github.com/fitlifegroup/app.wehandleship.com.git,update_move_stocks_view,True,2024-12-11 14:08:03,167.4979305267334,keep
+google_suites,/Users/yp/Code/google_suites,True,https://github.com/yogipatel5/google-suites.git,fix/test-mocks,True,2025-01-02 17:36:05,378.0600595474243,keep
+.pytest_cache,/Users/yp/Code/.pytest_cache,False,,,False,2023-11-09 17:25:11,0.000560760498046875,keep
+config,/Users/yp/Code/config,False,,,False,2024-02-18 17:23:16,18.851975440979004,keep
+image-projects,/Users/yp/Code/image-projects,False,,,False,2023-11-17 03:50:28,114.74378204345703,keep
+plugin-vscode-notion,/Users/yp/Code/plugin-vscode-notion,True,https://github.com/neurosity/plugin-vscode-notion.git,master,True,2024-10-07 15:08:35,3.71781063079834,keep
+gapps,/Users/yp/Code/gapps,False,,,False,2024-11-23 16:35:18,2.0511369705200195,keep
+shipbreeze,/Users/yp/Code/shipbreeze,False,,,False,2024-12-04 16:28:28,0.007609367370605469,keep
+claude,/Users/yp/Code/claude,False,,,False,2024-12-16 15:42:05,26.746909141540527,keep
+face_similiar,/Users/yp/Code/face_similiar,False,,,False,2024-07-15 10:36:21,0.0040950775146484375,keep
+flavorgod,/Users/yp/Code/flavorgod,False,,,False,2024-09-12 17:49:17,81.83644390106201,keep
+pegasus-htmx,/Users/yp/Code/pegasus-htmx,False,,,False,2024-02-18 17:16:38,20.341073989868164,keep
+praisonai,/Users/yp/Code/praisonai,False,,,False,2025-01-03 13:36:49,288.23102951049805,keep
+Peyso_Django_v1.1.0,/Users/yp/Code/Peyso_Django_v1.1.0,False,,,False,2024-01-12 17:09:39,6.839114189147949,keep
+ebay_django,/Users/yp/Code/ebay_django,True,git@github.com:yogipatel5/ebay_django.git,develop,True,2024-12-27 10:44:49,245.2747049331665,keep
+flavorgod_company,/Users/yp/Code/flavorgod_company,True,git@github.com:yogipatel5/flavorgod_company.git,master,True,2024-11-09 13:20:49,445.65667629241943,keep
+key,/Users/yp/Code/key,False,,,False,2023-12-19 00:16:39,0.0035610198974609375,keep
+trysaas,/Users/yp/Code/trysaas,False,,,False,2024-01-23 13:38:14,0.0,keep
+docs,/Users/yp/Code/docs,True,https://github.com/yogipatel5/docs,main,False,2024-12-27 13:33:38,0.42311954498291016,keep
+gsheet,/Users/yp/Code/gsheet,False,,,False,2024-11-12 11:24:58,0.05410003662109375,keep
+.benchmarks,/Users/yp/Code/.benchmarks,False,,,False,2023-11-09 17:25:11,0.0,keep
+notion,/Users/yp/Code/notion,False,,,False,2024-10-07 14:56:43,0.0004730224609375,keep
+saas-boilerplate,/Users/yp/Code/saas-boilerplate,True,No remote URL,Unknown,False,2024-03-14 02:17:52,16.413393020629883,keep
+mac-scripts,/Users/yp/Code/mac-scripts,False,,,False,2023-11-22 09:57:02,0.11083507537841797,keep
+dchat,/Users/yp/Code/dchat,True,https://github.com/MITSUHIRO-KURIKI/DjangoOpenAIStreamingChat.git,main,True,2024-02-08 13:06:53,65.45305061340332,keep
+n8n,/Users/yp/Code/n8n,False,,,False,2024-12-31 18:02:57,261.83169651031494,keep
+cookiecutter-django,/Users/yp/Code/cookiecutter-django,True,https://github.com/cookiecutter/cookiecutter-django.git,master,False,2024-11-09 12:53:44,12.670592308044434,keep
+flavorgod-shopify,/Users/yp/Code/flavorgod-shopify,True,https://github.com/fitlifegroup/flavorgod-shopify.git,main,False,2024-12-30 14:57:48,65.22343444824219,keep
+.mypy_cache,/Users/yp/Code/.mypy_cache,False,,,False,2025-01-03 15:45:18,7.2212419509887695,keep
+voice,/Users/yp/Code/voice,False,,,False,2023-11-17 14:09:21,217.5285997390747,keep
+langflow,/Users/yp/Code/langflow,True,https://github.com/langflow-ai/langflow.git,main,False,2025-01-03 14:15:11,2118.3453407287598,keep
+omnichannel,/Users/yp/Code/omnichannel,False,,,False,2023-11-19 02:55:38,162.88507461547852,keep
+fg_data,/Users/yp/Code/fg_data,False,,,False,2023-12-11 13:00:47,12.888129234313965,keep
+localpilot,/Users/yp/Code/localpilot,True,https://github.com/danielgross/localpilot,main,True,2024-03-14 02:17:52,99.17142009735107,keep
+huggingface,/Users/yp/Code/huggingface,False,,,False,2024-03-14 02:17:52,0.08893489837646484,keep
+bettors,/Users/yp/Code/bettors,True,https://github.com/yogipatel5/bettors,main,True,2024-10-28 14:54:28,617.7151002883911,keep
+bettors-peg,/Users/yp/Code/bettors-peg,True,https://github.com/yogipatel5/bettors-peg.git,main,True,2024-12-18 18:11:19,681.4998941421509,keep
+.vscode,/Users/yp/Code/.vscode,False,,,False,2023-11-16 21:46:47,0.000537872314453125,keep
+_Archive,/Users/yp/Code/_Archive,False,,,False,2025-01-03 16:14:42,147754.73647117615,keep
+order_sync,/Users/yp/Code/order_sync,True,https://github.com/fitlifegroup/order_sync.git,walmart_bulk_inventory,True,2024-12-04 16:27:55,5.772192001342773,keep
+ebay-django,/Users/yp/Code/ebay-django,False,,,False,2024-09-08 19:04:37,1.33514404296875e-05,keep
+New_Arc,/Users/yp/Code/New_Arc,False,,,False,2023-12-01 23:29:09,33.98694133758545,keep
+proxmox_helper,/Users/yp/Code/proxmox_helper,True,https://github.com/yogipatel5/proxmox_helpers.git,main,True,2024-11-18 17:41:37,0.15449905395507812,keep

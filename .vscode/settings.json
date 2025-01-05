@@ -1,0 +1,43 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.trunk/*actions/": true,
+    "**/.trunk/*logs/": true,
+    "**/.trunk/*notifications/": true,
+    "**/.trunk/*out/": true,
+    "**/.trunk/*plugins/": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.coverage": true,
+    "**/.mypy_cache": true,
+    "**/.ipynb_checkpoints": true,
+    "/backups": true,
+    "backups": true
+  },
+  "hide-files.files": [".mypy_cache", ".pytest_cache", ".ruff_cache"],
+  "python.analysis.typeCheckingMode": "basic",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [88],
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "python.pythonPath": "${workspaceFolder}/.conda",
+  "python.defaultInterpreterPath": "/Users/yp/Code/_CODER/.conda/bin/python",
+  "python.testing.pytestEnabled": true
+}

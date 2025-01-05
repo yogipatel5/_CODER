@@ -1,0 +1,267 @@
+# =============================================================================
+#                          Core ZSH Configuration
+# =============================================================================
+# Disable login messages
+unset MAILCHECK
+
+export ZSH="$HOME/.oh-my-zsh"
+export ZPLUG_HOME=$HOMEBREW_PREFIX/opt/zplug
+
+# =============================================================================
+#                              Path Settings
+# =============================================================================
+
+# PATH Variables would go here from the .env on /Users/yp/Code/_CODER
+
+# =============================================================================
+#                          Environment Variables
+# =============================================================================
+
+# ENV Variables would go here from the .env on /Users/yp/Code/_CODER
+
+# =============================================================================
+#                              Oh-My-Zsh Setup
+# =============================================================================
+source $ZSH/oh-my-zsh.sh
+
+# =============================================================================
+#                              Prompt Configuration
+# =============================================================================
+setopt PROMPT_SUBST
+
+# Git branch for prompt
+git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ %F{242}\1%f/'
+}
+
+# Command execution time tracking
+preexec() {
+    timer=$SECONDS
+}
+
+precmd() {
+    if [ $timer ]; then
+        elapsed=$(($SECONDS - $timer))
+        if [ $elapsed -gt 2 ]; then
+            export RPROMPT="%F{242}${elapsed}s%f"
+        else
+            export RPROMPT="%F{242}%*%f"
+        fi
+        unset timer
+    fi
+}
+
+# Prompt styling
+PROMPT='%F{blue}%~%f$(git_branch)
+%# '
+RPROMPT='%F{242}%*%f'
+
+# =============================================================================
+#                              Plugin Management
+# =============================================================================
+source $ZPLUG_HOME/init.zsh
+
+# Plugin definitions
+zplug "zdharma/fast-syntax-highlighting", defer:2
+zplug "zsh-users/zsh-autosuggestions", defer:2
+zplug "plugins/git", from:oh-my-zsh
+zplug "plugins/conda", from:oh-my-zsh
+zplug "changyuheng/zsh-interactive-cd", defer:2
+zplug "jeffreytse/zsh-vi-mode"
+
+# Install plugins if needed
+if ! zplug check --verbose >/dev/null 2>&1; then
+    zplug install
+fi
+zplug load
+
+# =============================================================================
+#                              Completion Settings
+# =============================================================================
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$ZSH_CACHE_DIR/zcompdump"
+
+# Cache directory setup
+if [[ ! -w "$ZSH_CACHE_DIR" ]]; then
+    ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"
+fi
+mkdir -p "$ZSH_CACHE_DIR/completions"
+fpath=("$ZSH_CACHE_DIR/completions" $fpath)
+
+# Plugin path configuration
+for plugin in $plugins; do
+  if is_plugin "$ZSH_CUSTOM" "$plugin"; then
+    fpath=("$ZSH_CUSTOM/plugins/$plugin" $fpath)
+  elif is_plugin "$ZSH" "$plugin"; then
+    fpath=("$ZSH/plugins/$plugin" $fpath)
+  fi
+done
+
+# =============================================================================
+#                              Lazy Loading Functions
+# =============================================================================
+# Conda
+conda() {
+  unfunction "$0"
+  eval "$('/Users/yp/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+  $0 "$@"
+}
+
+# Zoxide
+zoxide() {
+  unfunction "$0"
+  eval "$(command zoxide init zsh)"
+  $0 "$@"
+}
+
+# TheFuck
+fuck() {
+  unfunction "$0"
+  eval "$(thefuck --alias)"
+  $0 "$@"
+}
+
+# Fuzzy Finder
+fzf() {
+  unfunction "$0"
+  [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+  $0 "$@"
+}
+
+# =============================================================================
+#                              Conda Configuration
+# =============================================================================
+eval "$(conda shell.zsh hook)"
+conda_auto_activate() {
+  if [[ -e ".conda-env" ]]; then
+    env_name=$(cat .conda-env)
+    conda activate $env_name
+  fi
+}
+precmd_functions+=(conda_auto_activate)
+
+# =============================================================================
+#                              SSH Key Management
+# =============================================================================
+# Create new SSH key
+createkey() {
+  ssh-keygen -t ed25519 -C 'yp@ypgoc.com' -f ~/.ssh/$1 -N ''
+  pbcopy < ~/.ssh/$1.pub
+  echo "Public key '$1' copied to clipboard"
+}
+
+# Copy existing SSH key
+getkey() {
+  local keys=($(ls ~/.ssh/ | grep -v '\.pub$' | grep -v 'known_hosts' | grep -v 'config'))
+  
+  if [ -n "$1" ]; then
+    if [ -f ~/.ssh/$1.pub ]; then
+      pbcopy < ~/.ssh/$1.pub
+      echo "Public key '$1' copied to clipboard"
+      return 0
+    else
+      echo "Key '$1' not found"
+      return 1
+    fi
+  fi
+
+  echo "Available SSH keys:"
+  select key in "${keys[@]}"; do
+    if [ -n "$key" ]; then
+      pbcopy < ~/.ssh/$key.pub
+      echo "Public key '$key' copied to clipboard"
+      break
+    else
+      echo "Invalid selection"
+    fi
+  done
+}
+
+# Deploy SSH key to remote server
+pastekey() {
+    local key=$1
+    local server=$2
+    if [ -z "$key" ] || [ -z "$server" ]; then
+        echo "Usage: pastekey <key_name> <server_ip>"
+        return 1
+    fi
+    if [ ! -f ~/.ssh/$key.pub ]; then
+        echo "Key file ~/.ssh/$key.pub not found"
+        return 1
+    fi
+    ssh $server "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys" < ~/.ssh/$key.pub
+    echo "Public key '$key' copied to $server:~/.ssh/authorized_keys"
+    
+    echo "Adding the private key to local config file"
+    addkeytoconfig $key $server
+}
+
+# Add SSH key to config
+addkeytoconfig() {
+    echo "Adding the private key to local config file"
+    {
+        echo "Host $server"
+        echo "    IdentityFile ~/.ssh/$key"
+        echo "    HostName $server" 
+        echo "    User root"
+        echo "    Port 22"
+    } >> ~/.ssh/config
+    echo "Added Host: $server to config with IdentityFile: ~/.ssh/$key"
+}
+
+# =============================================================================
+#                                  Aliases
+# =============================================================================
+# Modern ls replacement with icons using eza (maintained fork of exa)
+if command -v eza &> /dev/null; then
+    alias ls='eza --icons=always --group-directories-first'
+    alias l='eza --icons=always --group-directories-first -l'
+    alias la='eza --icons=always --group-directories-first -la'
+    alias lt='eza --icons=always --group-directories-first --tree'
+    alias ll='eza --icons=always --group-directories-first -l'
+    alias lg='eza --icons=always --group-directories-first -la --git'
+fi
+
+# Source shared aliases if they exist
+if [ -f ~/.shared_aliases ]; then
+    source ~/.shared_aliases
+fi
+
+alias chatty="~/code/ebay_django/.conda/ebay_django/bin/python /Users/yp/code/ebay_django/_DevOps/Chatty-ChatSystemSpecialist/chat.py"
+alias editconfig="cursor ~/.ssh/config"
+alias editzshrc="cursor ~/.zshrc"
+
+# iTerm2 AI aliases
+alias explain='it2ai explain'    # Explain the last command
+alias suggest='it2ai suggest'    # Get command suggestions
+alias chat='it2ai chat'         # Start an AI chat session
+
+# =============================================================================
+#                          Key Bindings
+# =============================================================================
+# Make command line behave like a text editor
+
+# Enable case-insensitive tab completion
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# Enable better word movement
+export ZVM_VI_INSERT_ESCAPE_BINDKEY=jk
+export ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+
+# Better word movement in insert mode
+zvm_after_init() {
+    bindkey "^[[1;3D" backward-word    # Alt + Left
+    bindkey "^[[1;3C" forward-word     # Alt + Right
+    bindkey "^[b" backward-word        # Alt + b
+    bindkey "^[f" forward-word         # Alt + f
+    bindkey "^[d" kill-word           # Alt + d (delete word forward)
+    bindkey "^w" backward-kill-word   # Ctrl + w (delete word backward)
+}
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+# Disable last login message
+clear
+
+# Disable "You have new mail" message
+unset MAILCHECK
+

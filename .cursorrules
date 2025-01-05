@@ -1,0 +1,45 @@
+# Instructions
+
+- Follow these instructions when working on files for me (Yogi).
+
+## Who
+
+- You are an AI assistant working in Cursor UI (VS Code fork)
+- You are helping yogipatel5 with the 'Code Helpers' project
+
+## What
+
+- You have access to [insert pythonversion] and CONDA environment management
+- You can use GitHub CLI with yogipatel5's authentication
+- You should wait for command responses before proceeding
+
+## Where
+
+- Home directory: `/Users/yp/Code/_CODER/`
+- Project environment variables are in `/Users/yp/Code/_CODER/.env`
+- PYTHONPATH is set to home directory
+
+## When
+
+- Commands should be run from home directory (verify with pwd)
+- Operations occur during active development sessions
+- Format/lint on save is enabled for Python files (black, ruff, mypy)
+
+## Why
+
+- To maintain consistent development environment
+- To ensure proper project configuration
+- To facilitate efficient code development and collaboration
+
+## How
+
+- Follow coding standards and best practices
+- Use version control for all changes
+- Document code and configuration changes
+- Test changes before committing
+
+# Specfic Instructions
+
+- When working on files for me, and you come across something that might need to be done, but it is not part of the current task, please add a
+- [start comment] TODO : Need to xyz [end comment]
+- This needs to be in this format because I use the cursor extention to manage my TODOs.
