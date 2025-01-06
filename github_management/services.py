@@ -56,6 +56,113 @@ class PushOptions:
     scheduled_time: Optional[datetime] = None
 
 
+class CommitMessageTemplate:
+    """Template for standardized commit messages."""
+
+    def __init__(
+        self,
+        type_: str,
+        scope: str | None = None,
+        description: str = "",
+        body: str | None = None,
+        footer: str | None = None,
+        breaking_change: bool = False,
+    ):
+        self.type = type_
+        self.scope = scope
+        self.description = description
+        self.body = body
+        self.footer = footer
+        self.breaking_change = breaking_change
+
+    def format_message(self) -> str:
+        """Format the commit message according to Conventional Commits."""
+        # Start with type
+        message = self.type
+
+        # Add scope if present
+        if self.scope:
+            message += f"({self.scope})"
+
+        # Add breaking change marker
+        if self.breaking_change:
+            message += "!"
+
+        # Add description
+        message += f": {self.description}"
+
+        # Add body if present
+        if self.body:
+            message += f"\n\n{self.body}"
+
+        # Add footer if present
+        if self.footer:
+            message += f"\n\n{self.footer}"
+
+        return message
+
+    @staticmethod
+    def validate_type(type_: str) -> bool:
+        """Validate commit type against conventional commits spec."""
+        valid_types = {
+            "feat",
+            "fix",
+            "docs",
+            "style",
+            "refactor",
+            "perf",
+            "test",
+            "build",
+            "ci",
+            "chore",
+            "revert",
+        }
+        return type_.lower() in valid_types
+
+    @staticmethod
+    def validate_message(message: str) -> tuple[bool, str]:
+        """Validate a commit message against conventional commits spec.
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        # Basic structure check
+        if ":" not in message:
+            return False, "Missing type/scope separator ':'"
+
+        # Split into header and body
+        header, *body = message.split("\n\n", 1)
+
+        # Parse header
+        type_part, description = header.split(":", 1)
+
+        # Check description
+        description = description.strip()
+        if not description:
+            return False, "Empty description"
+        if len(description) > 72:
+            return False, "Description too long (max 72 chars)"
+
+        # Parse type and scope
+        if "(" in type_part:
+            type_, scope = type_part.split("(", 1)
+            if not scope.endswith(")"):
+                return False, "Invalid scope format"
+            scope = scope[:-1]
+        else:
+            type_ = type_part
+            scope = None
+
+        # Remove breaking change marker
+        type_ = type_.rstrip("!")
+
+        # Validate type
+        if not CommitMessageTemplate.validate_type(type_):
+            return False, f"Invalid type '{type_}'"
+
+        return True, "Valid commit message"
+
+
 def push_changes(repo_path: str, options: PushOptions) -> None:
     """Push changes to remote repository with specified options."""
     try:
@@ -835,3 +942,163 @@ def cleanup_stale_branches(
     except Exception as e:
         logger.error(f"Unexpected error cleaning up branches: {str(e)}")
         raise RepositoryError(f"Unexpected error cleaning up branches: {str(e)}")
+
+
+def create_commit(
+    repo_path: str,
+    message_template: CommitMessageTemplate,
+    paths: List[str] | None = None,
+    sign: bool = False,
+    amend: bool = False,
+    verify: bool = True,
+) -> str:
+    """Create a commit using a message template.
+
+    Args:
+        repo_path: Path to repository
+        message_template: Template for commit message
+        paths: Paths to commit (None for all staged)
+        sign: Whether to GPG sign the commit
+        amend: Whether to amend the previous commit
+        verify: Whether to verify the commit message
+
+    Returns:
+        The commit hash
+
+    Raises:
+        RepositoryError: If commit fails
+    """
+    try:
+        # Format commit message
+        message = message_template.format_message()
+
+        # Validate if requested
+        if verify:
+            is_valid, error = CommitMessageTemplate.validate_message(message)
+            if not is_valid:
+                raise RepositoryError(f"Invalid commit message: {error}")
+
+        # Build commit command
+        cmd = ["git", "commit"]
+        if sign:
+            cmd.append("-S")
+        if amend:
+            cmd.append("--amend")
+        cmd.extend(["-m", message])
+
+        # Add paths if specified
+        if paths:
+            cmd.extend(paths)
+
+        # Execute in repository directory
+        original_dir = os.getcwd()
+        os.chdir(repo_path)
+
+        try:
+            # Create commit
+            subprocess.run(cmd, check=True, capture_output=True)
+
+            # Get commit hash
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            commit_hash = result.stdout.strip()
+
+            logger.info(f"Created commit {commit_hash[:8]}")
+            return commit_hash
+
+        finally:
+            os.chdir(original_dir)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to create commit: {error_msg}")
+        raise RepositoryError(f"Failed to create commit: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error creating commit: {str(e)}")
+        raise RepositoryError(f"Unexpected error creating commit: {str(e)}")
+
+
+def stage_changes(
+    repo_path: str,
+    paths: List[str] | None = None,
+    all_changes: bool = False,
+) -> None:
+    """Stage changes for commit.
+
+    Args:
+        repo_path: Path to repository
+        paths: Paths to stage (None for all tracked files)
+        all_changes: Whether to stage all changes (including untracked)
+
+    Raises:
+        RepositoryError: If staging fails
+    """
+    try:
+        original_dir = os.getcwd()
+        os.chdir(repo_path)
+
+        try:
+            # Build git add command
+            cmd = ["git", "add"]
+            if all_changes:
+                cmd.append("--all")
+            elif paths:
+                cmd.extend(paths)
+            else:
+                cmd.append(".")
+
+            # Execute staging
+            subprocess.run(cmd, check=True, capture_output=True)
+            logger.info("Changes staged successfully")
+
+        finally:
+            os.chdir(original_dir)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to stage changes: {error_msg}")
+        raise RepositoryError(f"Failed to stage changes: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error staging changes: {str(e)}")
+        raise RepositoryError(f"Unexpected error staging changes: {str(e)}")
+
+
+def get_staged_changes(repo_path: str) -> List[str]:
+    """Get list of staged files.
+
+    Args:
+        repo_path: Path to repository
+
+    Returns:
+        List of staged file paths
+
+    Raises:
+        RepositoryError: If getting staged files fails
+    """
+    try:
+        original_dir = os.getcwd()
+        os.chdir(repo_path)
+
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--cached", "--name-only"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return [line for line in result.stdout.splitlines() if line.strip()]
+
+        finally:
+            os.chdir(original_dir)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to get staged changes: {error_msg}")
+        raise RepositoryError(f"Failed to get staged changes: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error getting staged changes: {str(e)}")
+        raise RepositoryError(f"Unexpected error getting staged changes: {str(e)}")

@@ -1,6 +1,8 @@
 """Forms for GitHub repository management."""
 
-from typing import Any, Dict, List, Optional
+import json
+import subprocess
+from typing import Any, Dict, List
 
 from django import forms
 
@@ -37,17 +39,38 @@ class RepositoryForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
-        """Initialize form with dynamic template choices."""
+        """Initialize form and fetch available templates."""
         super().__init__(*args, **kwargs)
         self.fields["template"].choices = self._get_template_choices()
 
     def _get_template_choices(self) -> List[tuple[str, str]]:
-        """Get available repository templates."""
+        """Get available repository templates.
+
+        Returns:
+            List of tuples containing (template_name, display_name)
+        """
+        choices = [("", "No template")]
         try:
-            # TODO: Implement template listing using GitHub API
-            return [("", "No template")]
+            # Get templates from GitHub CLI
+            result = subprocess.run(
+                ["gh", "repo", "list", "--json", "name,description", "--template"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            templates = json.loads(result.stdout)
+
+            # Add templates to choices
+            for template in templates:
+                name = template["name"]
+                desc = template.get("description", "")
+                display = f"{name} - {desc}" if desc else name
+                choices.append((name, display))
+
+            return choices
         except Exception:
-            return [("", "No template")]  # Fallback if template listing fails
+            # If template fetching fails, return just the empty choice
+            return choices
 
     def clean_name(self) -> str:
         """Validate repository name."""
@@ -133,21 +156,26 @@ class RepositoryDeleteForm(forms.Form):
     """Form for confirming repository deletion."""
 
     confirm_name = forms.CharField(
+        max_length=100,
         help_text="Please type the repository name to confirm deletion.",
     )
 
-    def __init__(self, *args, repository_name: Optional[str] = None, **kwargs):
-        """Initialize form with repository name for validation."""
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, repository_name: str | None = None, **kwargs):
+        """Initialize form with repository name."""
         self.repository_name = repository_name
+        super().__init__(*args, **kwargs)
+        if repository_name:
+            self.fields["confirm_name"].help_text = (
+                f'Please type "{repository_name}" to confirm deletion.'
+            )
 
-    def clean_confirm_name(self) -> str:
-        """Validate confirmation name matches repository name."""
+    def clean_confirm_name(self):
+        """Validate that the confirmed name matches the repository name."""
         confirm_name = self.cleaned_data["confirm_name"]
         if not self.repository_name:
             raise forms.ValidationError("No repository name provided for validation.")
         if confirm_name != self.repository_name:
             raise forms.ValidationError(
-                "Please type the exact repository name to confirm deletion."
+                "The name you entered doesn't match the repository name."
             )
         return confirm_name

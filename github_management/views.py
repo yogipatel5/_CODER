@@ -8,7 +8,13 @@ from django.views.generic import FormView, TemplateView
 from django.views.generic.detail import DetailView
 
 from .forms import RepositoryDeleteForm, RepositoryFilterForm, RepositoryForm
-from .services import get_all_repos
+from .services import (
+    RepositoryError,
+    create_repository,
+    delete_repository,
+    get_all_repos,
+    update_repository,
+)
 
 
 class DashboardView(TemplateView):
@@ -120,11 +126,26 @@ class RepositoryCreateView(FormView):
     def form_valid(self, form):
         """Create repository using GitHub API."""
         try:
-            # TODO: Implement repository creation
-            messages.success(self.request, "Repository created successfully.")
+            # Create repository using form data
+            repo = create_repository(
+                name=form.cleaned_data["name"],
+                description=form.cleaned_data["description"],
+                visibility=form.cleaned_data["visibility"],
+                template=form.cleaned_data["template"],
+                initial_branch=form.cleaned_data["initial_branch"],
+            )
+
+            messages.success(
+                self.request,
+                f"Repository '{repo['name']}' created successfully. "
+                f"View it at {repo['url']}",
+            )
             return super().form_valid(form)
+        except RepositoryError as e:
+            messages.error(self.request, str(e))
+            return self.form_invalid(form)
         except Exception as e:
-            messages.error(self.request, f"Error creating repository: {str(e)}")
+            messages.error(self.request, f"Unexpected error: {str(e)}")
             return self.form_invalid(form)
 
 
@@ -145,7 +166,7 @@ class RepositoryUpdateView(FormView):
                     {
                         "name": repo["name"],
                         "description": repo.get("description", ""),
-                        "visibility": repo["visibility"],
+                        "visibility": repo["visibility"].lower(),
                     }
                 )
         except Exception as e:
@@ -161,17 +182,44 @@ class RepositoryUpdateView(FormView):
     def get_success_url(self):
         """Redirect to repository detail page."""
         return reverse_lazy(
-            "github_management:repository_detail", kwargs={"name": self.kwargs["name"]}
+            "github_management:repository_detail",
+            kwargs={"name": self.get_new_name() or self.kwargs["name"]},
         )
+
+    def get_new_name(self) -> str | None:
+        """Get the new repository name if it was changed."""
+        if self.form_valid_data:
+            return self.form_valid_data.get("name")
+        return None
 
     def form_valid(self, form):
         """Update repository using GitHub API."""
         try:
-            # TODO: Implement repository update
-            messages.success(self.request, "Repository updated successfully.")
+            current_name = self.kwargs["name"]
+            new_name = form.cleaned_data["name"]
+
+            # Update repository
+            repo = update_repository(
+                name=current_name,
+                new_name=new_name if new_name != current_name else None,
+                description=form.cleaned_data["description"],
+                visibility=form.cleaned_data["visibility"],
+            )
+
+            # Store form data for success_url
+            self.form_valid_data = form.cleaned_data
+
+            messages.success(
+                self.request,
+                f"Repository '{repo['name']}' updated successfully. "
+                f"View it at {repo['url']}",
+            )
             return super().form_valid(form)
+        except RepositoryError as e:
+            messages.error(self.request, str(e))
+            return self.form_invalid(form)
         except Exception as e:
-            messages.error(self.request, f"Error updating repository: {str(e)}")
+            messages.error(self.request, f"Unexpected error: {str(e)}")
             return self.form_invalid(form)
 
 
@@ -191,15 +239,30 @@ class RepositoryDeleteView(FormView):
     def get_context_data(self, **kwargs) -> Dict[str, Any]:
         """Add repository object to context."""
         context = super().get_context_data(**kwargs)
-        context["repository"] = {"name": self.kwargs["name"]}
+        try:
+            repos = get_all_repos()
+            repo = next((r for r in repos if r["name"] == self.kwargs["name"]), None)
+            if repo:
+                context["repository"] = repo
+            else:
+                messages.error(self.request, "Repository not found.")
+        except Exception as e:
+            messages.error(self.request, f"Error fetching repository details: {str(e)}")
         return context
 
     def form_valid(self, form):
         """Delete repository using GitHub API."""
         try:
-            # TODO: Implement repository deletion
-            messages.success(self.request, "Repository deleted successfully.")
+            repo_name = self.kwargs["name"]
+            delete_repository(repo_name)
+            messages.success(
+                self.request,
+                f"Repository '{repo_name}' has been permanently deleted.",
+            )
             return super().form_valid(form)
+        except RepositoryError as e:
+            messages.error(self.request, str(e))
+            return self.form_invalid(form)
         except Exception as e:
-            messages.error(self.request, f"Error deleting repository: {str(e)}")
+            messages.error(self.request, f"Unexpected error: {str(e)}")
             return self.form_invalid(form)
