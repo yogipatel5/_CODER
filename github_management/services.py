@@ -1102,3 +1102,288 @@ def get_staged_changes(repo_path: str) -> List[str]:
     except Exception as e:
         logger.error(f"Unexpected error getting staged changes: {str(e)}")
         raise RepositoryError(f"Unexpected error getting staged changes: {str(e)}")
+
+
+def link_remote_repository(
+    local_path: str,
+    remote_url: str,
+    remote_name: str = "origin",
+    fetch: bool = True,
+) -> None:
+    """Link a local repository to a remote repository.
+
+    Args:
+        local_path: Path to local repository
+        remote_url: URL of remote repository
+        remote_name: Name for the remote (default: origin)
+        fetch: Whether to fetch from remote after linking
+
+    Raises:
+        RepositoryError: If linking fails
+    """
+    try:
+        original_dir = os.getcwd()
+        os.chdir(local_path)
+
+        try:
+            # Check if remote already exists
+            result = subprocess.run(
+                ["git", "remote"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            existing_remotes = result.stdout.splitlines()
+
+            if remote_name in existing_remotes:
+                # Update existing remote
+                logger.info(f"Updating existing remote: {remote_name}")
+                subprocess.run(
+                    ["git", "remote", "set-url", remote_name, remote_url],
+                    check=True,
+                    capture_output=True,
+                )
+            else:
+                # Add new remote
+                logger.info(f"Adding new remote: {remote_name}")
+                subprocess.run(
+                    ["git", "remote", "add", remote_name, remote_url],
+                    check=True,
+                    capture_output=True,
+                )
+
+            if fetch:
+                logger.info(f"Fetching from remote: {remote_name}")
+                subprocess.run(
+                    ["git", "fetch", remote_name],
+                    check=True,
+                    capture_output=True,
+                )
+
+        finally:
+            os.chdir(original_dir)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to link remote repository: {error_msg}")
+        raise RepositoryError(f"Failed to link remote repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error linking remote repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error linking remote repository: {str(e)}")
+
+
+def sync_repository(
+    local_path: str,
+    remote_name: str = "origin",
+    branch: str = "main",
+    force: bool = False,
+) -> Dict[str, Any]:
+    """Synchronize local repository with remote.
+
+    Args:
+        local_path: Path to local repository
+        remote_name: Name of remote to sync with
+        branch: Branch to sync
+        force: Whether to force sync (overwrite local changes)
+
+    Returns:
+        Dictionary containing sync status information
+
+    Raises:
+        RepositoryError: If sync fails
+    """
+    try:
+        original_dir = os.getcwd()
+        os.chdir(local_path)
+
+        try:
+            status = {
+                "fetch_success": False,
+                "push_success": False,
+                "changes_incoming": False,
+                "changes_outgoing": False,
+                "conflicts": False,
+            }
+
+            # Fetch latest changes
+            logger.info(f"Fetching from {remote_name}/{branch}")
+            subprocess.run(
+                ["git", "fetch", remote_name, branch],
+                check=True,
+                capture_output=True,
+            )
+            status["fetch_success"] = True
+
+            # Check for incoming changes
+            result = subprocess.run(
+                ["git", "rev-list", "HEAD..FETCH_HEAD", "--count"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            incoming_commits = int(result.stdout.strip())
+            status["changes_incoming"] = incoming_commits > 0
+
+            # Check for outgoing changes
+            result = subprocess.run(
+                ["git", "rev-list", "FETCH_HEAD..HEAD", "--count"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            outgoing_commits = int(result.stdout.strip())
+            status["changes_outgoing"] = outgoing_commits > 0
+
+            if status["changes_incoming"]:
+                if force:
+                    # Force reset to remote state
+                    logger.warning("Force resetting to remote state")
+                    subprocess.run(
+                        ["git", "reset", "--hard", f"{remote_name}/{branch}"],
+                        check=True,
+                        capture_output=True,
+                    )
+                else:
+                    # Try to merge incoming changes
+                    try:
+                        logger.info("Merging incoming changes")
+                        subprocess.run(
+                            ["git", "merge", f"{remote_name}/{branch}"],
+                            check=True,
+                            capture_output=True,
+                        )
+                    except subprocess.CalledProcessError:
+                        status["conflicts"] = True
+                        logger.warning("Merge conflicts detected")
+                        # Abort merge
+                        subprocess.run(
+                            ["git", "merge", "--abort"],
+                            check=True,
+                            capture_output=True,
+                        )
+                        return status
+
+            if status["changes_outgoing"] and not status["conflicts"]:
+                # Push local changes
+                logger.info(f"Pushing to {remote_name}/{branch}")
+                push_options = PushOptions(
+                    remote=remote_name,
+                    branch=branch,
+                    force=force,
+                )
+                push_changes(local_path, push_options)
+                status["push_success"] = True
+
+            return status
+
+        finally:
+            os.chdir(original_dir)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to sync repository: {error_msg}")
+        raise RepositoryError(f"Failed to sync repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error syncing repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error syncing repository: {str(e)}")
+
+
+def backup_repository(
+    repo_name: str,
+    backup_dir: str,
+    include_lfs: bool = True,
+    include_wiki: bool = True,
+) -> Dict[str, Any]:
+    """Create a backup of a GitHub repository.
+
+    Args:
+        repo_name: Repository name to backup
+        backup_dir: Directory to store backup
+        include_lfs: Whether to include LFS objects
+        include_wiki: Whether to include wiki
+
+    Returns:
+        Dictionary containing backup information
+
+    Raises:
+        RepositoryError: If backup fails
+    """
+    try:
+        # Create backup directory if it doesn't exist
+        backup_path = os.path.join(
+            backup_dir, f"{repo_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        )
+        os.makedirs(backup_path, exist_ok=True)
+
+        logger.info(f"Creating backup of {repo_name} in {backup_path}")
+
+        # Clone repository with all branches and tags
+        subprocess.run(
+            [
+                "gh",
+                "repo",
+                "clone",
+                f"yogipatel5/{repo_name}",
+                backup_path,
+                "--",
+                "--mirror",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        backup_info = {
+            "repository": repo_name,
+            "backup_path": backup_path,
+            "timestamp": datetime.now().isoformat(),
+            "includes": {
+                "all_branches": True,
+                "all_tags": True,
+                "lfs": False,
+                "wiki": False,
+            },
+        }
+
+        if include_lfs:
+            try:
+                # Fetch LFS objects
+                logger.info("Fetching LFS objects")
+                subprocess.run(
+                    ["git", "lfs", "fetch", "--all"],
+                    cwd=backup_path,
+                    check=True,
+                    capture_output=True,
+                )
+                backup_info["includes"]["lfs"] = True
+            except subprocess.CalledProcessError:
+                logger.warning("Failed to fetch LFS objects, skipping")
+
+        if include_wiki:
+            try:
+                # Clone wiki if it exists
+                wiki_path = os.path.join(backup_path, "wiki")
+                subprocess.run(
+                    [
+                        "gh",
+                        "repo",
+                        "clone",
+                        f"yogipatel5/{repo_name}.wiki",
+                        wiki_path,
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                backup_info["includes"]["wiki"] = True
+            except subprocess.CalledProcessError:
+                logger.warning("Failed to clone wiki, skipping")
+
+        logger.info(f"Backup completed: {backup_path}")
+        return backup_info
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to backup repository: {error_msg}")
+        raise RepositoryError(f"Failed to backup repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error backing up repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error backing up repository: {str(e)}")
