@@ -6,11 +6,22 @@
 # TODO: Need to implement repository settings management
 # TODO: Need to implement repository webhook management
 
+import argparse
 import csv
 import json
 import subprocess
 import sys
 from datetime import datetime
+
+from .services import (
+    PushError,
+    PushOptions,
+    PushProtection,
+    get_push_protection,
+    push_changes,
+    schedule_push,
+    set_push_protection,
+)
 
 
 def get_all_repos():
@@ -135,31 +146,115 @@ def print_usage():
     )
 
 
-# Create a function to create a github repo using cli and then create the directory and add .vscode folder with a settings.json from the
+def push_repo(args) -> None:
+    """Push changes to remote repository."""
+    try:
+        options = PushOptions(
+            remote=args.remote,
+            branch=args.branch,
+            force=args.force,
+            force_with_lease=args.force_with_lease,
+            tags=args.tags,
+            set_upstream=args.set_upstream,
+            protection_level=PushProtection(args.protection),
+            scheduled_time=(
+                datetime.fromisoformat(args.schedule) if args.schedule else None
+            ),
+        )
+
+        if args.schedule:
+            schedule_push(".", options)
+            print(f"Push scheduled for {args.schedule}")
+        else:
+            push_changes(".", options)
+            print("Changes pushed successfully")
+
+    except PushError as e:
+        print(f"Error pushing changes: {e}")
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Invalid argument: {e}")
+        sys.exit(1)
+
+
+def get_protection(args) -> None:
+    """Get push protection level for repository."""
+    try:
+        protection = get_push_protection(".")
+        print(f"Current push protection level: {protection.value}")
+    except PushError as e:
+        print(f"Error getting push protection: {e}")
+        sys.exit(1)
+
+
+def set_protection(args) -> None:
+    """Set push protection level for repository."""
+    try:
+        set_push_protection(".", PushProtection(args.level))
+        print(f"Push protection level set to: {args.level}")
+    except PushError as e:
+        print(f"Error setting push protection: {e}")
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Invalid protection level: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        # If no arguments provided, create the CSV
-        save_repos_to_csv()
+    parser = argparse.ArgumentParser(description="GitHub repository management tool")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
+
+    # Push command
+    push_parser = subparsers.add_parser("push", help="Push changes to remote")
+    push_parser.add_argument("--remote", default="origin", help="Remote name")
+    push_parser.add_argument("--branch", default="main", help="Branch name")
+    push_parser.add_argument("--force", action="store_true", help="Force push")
+    push_parser.add_argument(
+        "--force-with-lease", action="store_true", help="Force push with lease"
+    )
+    push_parser.add_argument("--tags", action="store_true", help="Push tags")
+    push_parser.add_argument(
+        "--set-upstream", action="store_true", help="Set upstream branch"
+    )
+    push_parser.add_argument(
+        "--protection",
+        choices=[p.value for p in PushProtection],
+        default=PushProtection.BASIC.value,
+        help="Push protection level",
+    )
+    push_parser.add_argument(
+        "--schedule",
+        help="Schedule push for later (ISO format datetime)",
+    )
+
+    # Push protection commands
+    protection_parser = subparsers.add_parser(
+        "protection", help="Manage push protection"
+    )
+    protection_subparsers = protection_parser.add_subparsers(dest="protection_command")
+
+    get_protection_parser = protection_subparsers.add_parser(
+        "get", help="Get push protection level"
+    )
+    set_protection_parser = protection_subparsers.add_parser(
+        "set", help="Set push protection level"
+    )
+    set_protection_parser.add_argument(
+        "level",
+        choices=[p.value for p in PushProtection],
+        help="Protection level to set",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "push":
+        push_repo(args)
+    elif args.command == "protection":
+        if args.protection_command == "get":
+            get_protection(args)
+        elif args.protection_command == "set":
+            set_protection(args)
+        else:
+            protection_parser.print_help()
     else:
-        # Check for action flag
-        if sys.argv[1] not in ["--update", "--delete"]:
-            print_usage()
-            sys.exit(1)
-
-        action = sys.argv[1]
-        if len(sys.argv) < 3:
-            print("Error: CSV file required")
-            print_usage()
-            sys.exit(1)
-
-        csv_file = sys.argv[2]
-        dry_run = "--dry-run" in sys.argv
-
-        if action == "--update":
-            print(f"Processing description updates from {csv_file}")
-            update_descriptions(csv_file, dry_run=dry_run)
-        else:  # --delete
-            print(f"Processing deletions from {csv_file}")
-            process_deletions(csv_file, dry_run=dry_run)
+        parser.print_help()
