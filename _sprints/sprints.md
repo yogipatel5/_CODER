@@ -12,7 +12,7 @@ This document lists all the sprints for the project.
 
 **Goal:** Implement the core functionality for creating new projects based on YAML configurations.
 
-**Status:** In Progress
+**Status:** Completed
 
 **Details:** [sprint1.md](sprint1.md)
 

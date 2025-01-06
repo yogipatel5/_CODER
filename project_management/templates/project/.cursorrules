@@ -1,0 +1,28 @@
+# Who
+
+- You are an AI assistant working in Cursor UI (VS Code fork)
+- You are helping yogipatel5 with the '[proect_name]' project
+
+# What
+
+- You have access to [pythonversion] and CONDA environment management
+- You can use GitHub CLI with yogipatel5's authentication
+- You should wait for command responses before proceeding
+
+# Where
+
+- Home directory: [directory]
+- Project environment variables are in .env
+- PYTHONPATH is set to home directory
+
+# When
+
+- Commands should be run from home directory (verify with pwd)
+- Operations occur during active development sessions
+- Format/lint on save is enabled for Python files (black, ruff, mypy)
+
+# Why
+
+- To maintain consistent development environment
+- To ensure proper project configuration
+- To facilitate efficient code development and collaboration

@@ -1,31 +1,134 @@
-# _CODER_
+# Code Helpers
 
-This is a collection of tools for developing on my Macbook Studio and Macbook Pro - it is a personal project.
+A collection of tools for developing on my Macbook Studio and Macbook Pro, built with Django 5.1.4.
 
-## Computer Setup
+## Project Structure
 
-My Computer has the same username so the ~/code/\_CODER folder will be in the same location on both computers `~/code/_CODER`
+```
+_CODER/
+├── automation/               # Automation tools and scripts
+├── core/                    # Django project core settings
+├── github_management/       # GitHub management tools
+├── project_management/      # Project management tools
+├── proxmox_management/      # Proxmox management tools
+├── system_management/       # System management tools
+├── vault_management/        # Vault management tools
+├── manage.py               # Django management script
+├── requirements.txt        # Python dependencies
+└── .env                    # Environment variables (not in git)
+```
 
-## Project Management Scripts
+## Setup
 
-- `/coder_project_template.yaml` - This is a template for creating a new project on my Macbook. It uses the `coder` command to create the project.
-- `/projects/create_project.sh` - This is a script that will create a new project on my Macbook. It uses the `coder` command to create the project.
-  > TODO: Create the `coder` alias and executable. Consider adding command line CLI with prompts when YAML file is not provided.
-- `/projects/dirhelper.py` - This is a script that will helps manage the ~/code/ directory
+1. Clone the repository:
 
-## System Scripts
+```bash
+git clone git@github.com:yogipatel5/Code-Helpers.git
+cd Code-Helpers
+```
 
--
+2. Create and activate a conda environment:
 
-## .Template Directory
+```bash
+conda create -n coder python=3.11
+conda activate coder
+```
 
-- `/.templates/system/` - This is a collection of template files for my system ranging such as`/.zshrc`, `/.ssh/config`, `/.shared_aliases.template`
+3. Install dependencies:
 
-- `.templates/system/.zshrc.template` - This is a sample `.zshrc` file that I use on my Macbook, if I make updates, it should be reflected in the `.zshrc.template` file.
+```bash
+pip install -r requirements.txt
+```
 
-<!-- TODO : Need to create a script that will update the `.zshrc.template` file with the latest `.zshrc` file automatically maybe on a cron job. -->
+4. Create a `.env` file in the project root with the following variables:
 
-## Github Directory
+```
+POSTGRES_PASSWORD=your_password
+POSTGRES_USER=your_user
+POSTGRES_DB=CODER
+POSTGRES_HOST=your_host
+POSTGRES_PORT=5432
+REDIS_HOST=your_host
+REDIS_PORT=6379
+```
 
-This is where I am
-/Users/yp/Code/\_CODER/github
+5. Create the database:
+
+```bash
+createdb -h $POSTGRES_HOST -U $POSTGRES_USER CODER
+```
+
+6. Run migrations:
+
+```bash
+python manage.py migrate
+```
+
+7. Create a superuser:
+
+```bash
+python manage.py createsuperuser
+```
+
+8. Run the development server:
+
+```bash
+python manage.py runserver
+```
+
+The server will be available at http://localhost:8000
+
+## Apps
+
+### Core
+
+- Django project settings and configuration
+- Main URL routing
+
+### Automation
+
+- Project creation and automation tools
+- Directory structure helpers
+
+### GitHub Management
+
+- GitHub repository management
+- Git workflow automation
+
+### System Management
+
+- System configuration tools
+- Environment management
+
+### Project Management
+
+- Project tracking and organization
+- Task management
+
+### Proxmox Management
+
+- Proxmox VE management tools
+- VM and container management
+
+### Vault Management
+
+- HashiCorp Vault integration
+- Secrets management
+
+## Development
+
+- The project uses PostgreSQL for the database
+- Redis is used for caching and session storage
+- All apps follow Django's app structure
+- Code formatting is handled by black, ruff, and mypy
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Run tests and linting
+4. Submit a pull request
+
+## License
+
+This project is private and not licensed for public use.
