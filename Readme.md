@@ -94,6 +94,30 @@ The server will be available at http://localhost:8000
 
 - GitHub repository management
 - Git workflow automation
+- Repository operations:
+  - Create and delete repositories
+  - Update repository descriptions
+  - Manage repository visibility
+- Push operations:
+  - Basic and force push with protection levels
+  - Scheduled push operations
+  - Branch-specific push settings
+  - Push protection management (none/basic/strict)
+  - Force push protection and validation
+- Git workflow automation
+
+### Usage Examples
+
+```bash
+# Push Operations
+python -m github_management.giithelper push --branch feature/my-branch  # Push to specific branch
+python -m github_management.giithelper push --force --tags             # Force push with tags
+python -m github_management.giithelper push --schedule "2024-01-20T15:30:00"  # Schedule push
+
+# Push Protection
+python -m github_management.giithelper protection set strict  # Set strict protection
+python -m github_management.giithelper protection get        # View current protection
+```
 
 ### System Management
 
