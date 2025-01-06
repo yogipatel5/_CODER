@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+# TODO: Need to implement GitHub repository creation with templates
+# TODO: Need to implement repository visibility management (public/private)
+# TODO: Need to implement repository collaborator management
+# TODO: Need to implement repository settings management
+# TODO: Need to implement repository webhook management
+
 import csv
 import json
 import subprocess

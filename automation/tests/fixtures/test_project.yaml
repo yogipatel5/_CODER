@@ -1,0 +1,63 @@
+# Test project configuration
+project_name: test_project
+path: ~/Code/Projects/test
+
+# Project structure configuration
+structure:
+  directories:
+    - src
+    - tests
+    - docs
+    - config
+    - scripts
+    - .vscode
+  files:
+    - src/__init__.py
+    - tests/__init__.py
+    - docs/README.md
+    - config/settings.yaml
+    - scripts/setup.sh
+    - .vscode/settings.json
+    - requirements.txt
+    - setup.py
+    - README.md
+    - .gitignore
+
+# Template configuration
+templates:
+  copy_all: false
+  files:
+    - .templates/project/.cursorrules
+    - .templates/project/.vscode/settings.json
+    - .templates/project/README.md
+    - .templates/project/.gitignore
+
+# Conda environment configuration
+conda:
+  create_conda_env: true
+  python_version: "3.11"
+  dependencies:
+    - pytest
+    - black
+    - flake8
+    - mypy
+    - isort
+
+# Git configuration
+git:
+  create_local_repo: true
+  create_remote_repo: true
+  initial_branch: main
+  commit_message: "Initial project setup for testing"
+  other_branches:
+    - develop
+    - feature/setup
+    - test/setup
+
+# Additional metadata for testing
+metadata:
+  author: "Test User"
+  email: "test@example.com"
+  description: "A test project configuration for automated testing"
+  version: "0.1.0"
+  license: "MIT" 

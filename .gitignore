@@ -48,4 +48,4 @@ ENV/
 .mypy_cache/
 .pytest_cache/
 .coverage
-htmlcov/
+htmlcov/.DS_Store
