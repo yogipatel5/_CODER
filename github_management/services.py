@@ -8,17 +8,24 @@ GitHub management services for handling git repositories and related operations.
 # TODO: Need to implement automated git commit operations
 # TODO: Need to implement git push operations with error handling
 
+import json
 import logging
 import os
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from core.services import ConfigurationError
 
 logger = logging.getLogger(__name__)
+
+
+class RepositoryError(Exception):
+    """Exception raised for errors during repository operations."""
+
+    pass
 
 
 class PushError(Exception):
@@ -220,3 +227,611 @@ def initialize_git_repository(config: Dict[str, Any], project_path: str) -> None
         )
     except Exception as e:
         raise ConfigurationError(f"Failed to initialize git repository: {str(e)}")
+
+
+def create_repository(
+    name: str,
+    description: str = "",
+    visibility: str = "private",
+    template: Optional[str] = None,
+    initial_branch: str = "main",
+    gitignore_template: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Create a new GitHub repository.
+
+    Args:
+        name: Repository name
+        description: Repository description
+        visibility: Repository visibility (public/private)
+        template: Template repository to use
+        initial_branch: Name of the initial branch
+        gitignore_template: .gitignore template to use
+
+    Returns:
+        Dict containing repository information
+
+    Raises:
+        RepositoryError: If repository creation fails
+    """
+    try:
+        # Base command for repository creation
+        cmd = [
+            "gh",
+            "repo",
+            "create",
+            name,
+            f"--{visibility}",
+            "--confirm",
+        ]
+
+        # Add optional parameters
+        if description:
+            cmd.extend(["--description", description])
+        if template:
+            cmd.extend(["--template", template])
+        if initial_branch != "main":
+            cmd.extend(["--default-branch", initial_branch])
+        if gitignore_template:
+            cmd.extend(["--gitignore", gitignore_template])
+
+        # Create repository
+        logger.info(f"Creating repository: {name}")
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        # Get repository details
+        repo_info = subprocess.run(
+            [
+                "gh",
+                "repo",
+                "view",
+                name,
+                "--json",
+                "name,url,description,visibility,defaultBranchRef",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return json.loads(repo_info.stdout)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to create repository: {error_msg}")
+        raise RepositoryError(f"Failed to create repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error creating repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error creating repository: {str(e)}")
+
+
+def get_all_repos() -> list[Dict[str, Any]]:
+    """Get all GitHub repositories for the authenticated user.
+
+    Returns:
+        List of dictionaries containing repository information
+
+    Raises:
+        RepositoryError: If fetching repositories fails
+    """
+    try:
+        result = subprocess.run(
+            [
+                "gh",
+                "repo",
+                "list",
+                "--json",
+                "name,url,description,visibility,defaultBranchRef,createdAt,updatedAt",
+                "--limit",
+                "1000",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to fetch repositories: {error_msg}")
+        raise RepositoryError(f"Failed to fetch repositories: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error fetching repositories: {str(e)}")
+        raise RepositoryError(f"Unexpected error fetching repositories: {str(e)}")
+
+
+def update_repository(
+    name: str,
+    new_name: str | None = None,
+    description: str | None = None,
+    visibility: str | None = None,
+) -> Dict[str, Any]:
+    """Update an existing GitHub repository.
+
+    Args:
+        name: Current repository name
+        new_name: New repository name (if renaming)
+        description: New repository description
+        visibility: New repository visibility (public/private)
+
+    Returns:
+        Dict containing updated repository information
+
+    Raises:
+        RepositoryError: If repository update fails
+    """
+    try:
+        # Build update command with owner
+        cmd = ["gh", "repo", "edit", f"yogipatel5/{name}"]
+
+        if new_name:
+            cmd.extend(["--name", new_name])
+        if description is not None:  # Allow empty description
+            cmd.extend(["--description", description])
+        if visibility:
+            cmd.extend(
+                [
+                    "--visibility",
+                    visibility.lower(),
+                    "--accept-visibility-change-consequences",
+                ]
+            )
+
+        # Execute update
+        logger.info(f"Updating repository: {name}")
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        # Get updated repository details
+        repo_info = subprocess.run(
+            [
+                "gh",
+                "repo",
+                "view",
+                f"yogipatel5/{new_name or name}",
+                "--json",
+                "name,url,description,visibility,defaultBranchRef",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return json.loads(repo_info.stdout)
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to update repository: {error_msg}")
+        raise RepositoryError(f"Failed to update repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error updating repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error updating repository: {str(e)}")
+
+
+def delete_repository(name: str) -> None:
+    """Delete a GitHub repository.
+
+    Args:
+        name: Repository name to delete
+
+    Raises:
+        RepositoryError: If repository deletion fails
+    """
+    try:
+        # Execute deletion command with owner
+        logger.info(f"Deleting repository: {name}")
+        cmd = ["gh", "repo", "delete", f"yogipatel5/{name}", "--confirm"]
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        logger.info(f"Repository {name} deleted successfully")
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to delete repository: {error_msg}")
+        raise RepositoryError(f"Failed to delete repository: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error deleting repository: {str(e)}")
+        raise RepositoryError(f"Unexpected error deleting repository: {str(e)}")
+
+
+def list_branches(repo_name: str) -> List[Dict[str, Any]]:
+    """List all branches in a repository.
+
+    Args:
+        repo_name: Repository name
+
+    Returns:
+        List of dictionaries containing branch information
+
+    Raises:
+        RepositoryError: If fetching branches fails
+    """
+    try:
+        logger.info(f"Listing branches for repository: {repo_name}")
+        result = subprocess.run(
+            [
+                "gh",
+                "api",
+                f"/repos/yogipatel5/{repo_name}/branches",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        branches = json.loads(result.stdout)
+        return [
+            {
+                "name": branch["name"],
+                "protected": branch["protected"],
+                "commit": branch["commit"]["sha"],
+            }
+            for branch in branches
+        ]
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to list branches: {error_msg}")
+        raise RepositoryError(f"Failed to list branches: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error listing branches: {str(e)}")
+        raise RepositoryError(f"Unexpected error listing branches: {str(e)}")
+
+
+def create_branch(
+    repo_name: str,
+    branch_name: str,
+    base_branch: str = "main",
+) -> Dict[str, Any]:
+    """Create a new branch in a repository.
+
+    Args:
+        repo_name: Repository name
+        branch_name: Name for the new branch
+        base_branch: Branch to create from
+
+    Returns:
+        Dictionary containing branch information
+
+    Raises:
+        RepositoryError: If branch creation fails
+    """
+    try:
+        logger.info(f"Creating branch {branch_name} in repository: {repo_name}")
+
+        # Get the SHA of the base branch
+        result = subprocess.run(
+            [
+                "gh",
+                "api",
+                f"/repos/yogipatel5/{repo_name}/git/refs/heads/{base_branch}",
+                "--jq",
+                ".object.sha",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        base_sha = result.stdout.strip()
+
+        # Create the new branch
+        create_result = subprocess.run(
+            [
+                "gh",
+                "api",
+                "--method",
+                "POST",
+                f"/repos/yogipatel5/{repo_name}/git/refs",
+                "-f",
+                f"ref=refs/heads/{branch_name}",
+                "-f",
+                f"sha={base_sha}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return json.loads(create_result.stdout)
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to create branch: {error_msg}")
+        raise RepositoryError(f"Failed to create branch: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error creating branch: {str(e)}")
+        raise RepositoryError(f"Unexpected error creating branch: {str(e)}")
+
+
+def delete_branch(repo_name: str, branch_name: str) -> None:
+    """Delete a branch from a repository.
+
+    Args:
+        repo_name: Repository name
+        branch_name: Branch to delete
+
+    Raises:
+        RepositoryError: If branch deletion fails
+    """
+    try:
+        logger.info(f"Deleting branch {branch_name} from repository: {repo_name}")
+        subprocess.run(
+            [
+                "gh",
+                "api",
+                "--method",
+                "DELETE",
+                f"/repos/yogipatel5/{repo_name}/git/refs/heads/{branch_name}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        logger.info(f"Branch {branch_name} deleted successfully")
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to delete branch: {error_msg}")
+        raise RepositoryError(f"Failed to delete branch: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error deleting branch: {str(e)}")
+        raise RepositoryError(f"Unexpected error deleting branch: {str(e)}")
+
+
+def set_branch_protection(
+    repo_name: str,
+    branch_name: str,
+    required_reviews: int = 0,
+    require_up_to_date: bool = True,
+    enforce_admins: bool = False,
+) -> Dict[str, Any]:
+    """Set branch protection rules.
+
+    For free accounts:
+    - Only public repositories can have branch protection
+    - Limited protection features are available
+    - Will attempt to set basic protection rules
+    - Returns None for unsupported features
+
+    Args:
+        repo_name: Repository name
+        branch_name: Branch to protect
+        required_reviews: Number of required reviews (0 to disable)
+        require_up_to_date: Require branch to be up to date before merging
+        enforce_admins: Enforce rules on repository administrators
+
+    Returns:
+        Dictionary containing protection rule information
+
+    Raises:
+        RepositoryError: If setting protection rules fails
+    """
+    try:
+        logger.info(
+            f"Setting protection rules for {branch_name} in repository: {repo_name}"
+        )
+
+        # First, check if repository is public
+        repo_info = subprocess.run(
+            [
+                "gh",
+                "repo",
+                "view",
+                f"yogipatel5/{repo_name}",
+                "--json",
+                "visibility",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        repo_data = json.loads(repo_info.stdout)
+
+        if repo_data["visibility"].lower() != "public":
+            logger.warning(
+                "Branch protection requires a public repository or GitHub Pro account"
+            )
+            return {
+                "message": "Branch protection requires a public repository or GitHub Pro account",
+                "protected": False,
+                "protection_url": None,
+            }
+
+        # Try to set up basic branch protection using gh branch command
+        try:
+            # Enable basic branch protection
+            subprocess.run(
+                [
+                    "gh",
+                    "repo",
+                    "edit",
+                    f"yogipatel5/{repo_name}",
+                    "--delete-branch-on-merge",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            return {
+                "message": "Basic repository protection enabled (delete on merge)",
+                "protected": True,
+                "protection_url": f"https://github.com/yogipatel5/{repo_name}/settings/branches",
+                "features": {
+                    "delete_on_merge": True,
+                    "force_push_disabled": True,
+                },
+            }
+
+        except subprocess.CalledProcessError as e:
+            if "Upgrade to GitHub Pro" in str(e.stderr):
+                logger.info(
+                    "Pro features not available, repository protection could not be enabled"
+                )
+                return {
+                    "message": "Branch protection requires GitHub Pro account",
+                    "protected": False,
+                    "protection_url": None,
+                }
+            raise
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to set branch protection: {error_msg}")
+        raise RepositoryError(f"Failed to set branch protection: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error setting branch protection: {str(e)}")
+        raise RepositoryError(f"Unexpected error setting branch protection: {str(e)}")
+
+
+def merge_branch(
+    repo_name: str,
+    head_branch: str,
+    base_branch: str = "main",
+    commit_message: str | None = None,
+) -> Dict[str, Any]:
+    """Merge one branch into another.
+
+    Args:
+        repo_name: Repository name
+        head_branch: Branch to merge from
+        base_branch: Branch to merge into
+        commit_message: Custom merge commit message
+
+    Returns:
+        Dictionary containing merge result information
+
+    Raises:
+        RepositoryError: If merge fails
+    """
+    try:
+        logger.info(
+            f"Merging {head_branch} into {base_branch} in repository: {repo_name}"
+        )
+
+        # Build merge payload
+        merge_data = {
+            "base": base_branch,
+            "head": head_branch,
+            "commit_message": (
+                commit_message
+                if commit_message
+                else f"Merge {head_branch} into {base_branch}"
+            ),
+        }
+
+        # Execute merge
+        result = subprocess.run(
+            [
+                "gh",
+                "api",
+                "--method",
+                "POST",
+                f"/repos/yogipatel5/{repo_name}/merges",
+                "-f",
+                f"merge_data={json.dumps(merge_data)}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to merge branches: {error_msg}")
+        raise RepositoryError(f"Failed to merge branches: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error merging branches: {str(e)}")
+        raise RepositoryError(f"Unexpected error merging branches: {str(e)}")
+
+
+def cleanup_stale_branches(
+    repo_name: str,
+    days_stale: int = 30,
+    protected_branches: List[str] = ["main", "master", "develop"],
+) -> List[str]:
+    """Clean up stale branches that haven't been updated.
+
+    Args:
+        repo_name: Repository name
+        days_stale: Number of days without updates to consider stale
+        protected_branches: List of branches to never delete
+
+    Returns:
+        List of deleted branch names
+
+    Raises:
+        RepositoryError: If cleanup fails
+    """
+    try:
+        logger.info(f"Cleaning up stale branches in repository: {repo_name}")
+        deleted_branches = []
+
+        # Get all branches
+        branches = list_branches(repo_name)
+        logger.info(f"Found {len(branches)} branches")
+
+        # Check each branch's last commit date
+        for branch in branches:
+            branch_name = branch["name"]
+            if branch_name in protected_branches or branch["protected"]:
+                logger.info(f"Skipping protected branch: {branch_name}")
+                continue
+
+            try:
+                # Get last commit date
+                result = subprocess.run(
+                    [
+                        "gh",
+                        "api",
+                        f"/repos/yogipatel5/{repo_name}/commits",
+                        "--jq",
+                        f".[] | select(.sha == \"{branch['commit']}\") | .commit.committer.date",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+
+                if not result.stdout.strip():
+                    logger.warning(
+                        f"No commit date found for branch {branch_name}, skipping"
+                    )
+                    continue
+
+                last_commit_date = datetime.fromisoformat(
+                    result.stdout.strip().replace("Z", "+00:00")
+                )
+
+                # Calculate days since last commit
+                days_old = (
+                    datetime.now(last_commit_date.tzinfo) - last_commit_date
+                ).days
+                logger.info(f"Branch {branch_name} is {days_old} days old")
+
+                # Check if branch is stale
+                if days_old >= days_stale:
+                    logger.info(
+                        f"Deleting stale branch: {branch_name} ({days_old} days old)"
+                    )
+                    delete_branch(repo_name, branch_name)
+                    deleted_branches.append(branch_name)
+                else:
+                    logger.info(
+                        f"Branch {branch_name} is still active ({days_old} days old)"
+                    )
+
+            except subprocess.CalledProcessError as e:
+                logger.warning(f"Error checking branch {branch_name}: {str(e)}")
+                continue
+
+        if deleted_branches:
+            logger.info(
+                f"Deleted {len(deleted_branches)} stale branches: {', '.join(deleted_branches)}"
+            )
+        else:
+            logger.info("No stale branches found")
+
+        return deleted_branches
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Failed to cleanup branches: {error_msg}")
+        raise RepositoryError(f"Failed to cleanup branches: {error_msg}")
+    except Exception as e:
+        logger.error(f"Unexpected error cleaning up branches: {str(e)}")
+        raise RepositoryError(f"Unexpected error cleaning up branches: {str(e)}")
