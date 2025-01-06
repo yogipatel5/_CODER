@@ -51,8 +51,58 @@ git:
   commit_message: "Initial project setup for testing"
   other_branches:
     - develop
-    - feature/setup
-    - test/setup
+    - staging
+  branch_protection:
+    main:
+      required_reviews: 1
+      require_signatures: true
+      require_linear_history: true
+      allow_force_push: false
+    develop:
+      required_reviews: 1
+      allow_force_push: true
+  hooks:
+    pre-commit:
+      - black
+      - ruff
+      - mypy
+    pre-push:
+      - pytest
+  remote:
+    name: test-project-yaml
+    provider: github
+    visibility: private
+    description: "A test project configuration for automated testing"
+    homepage: "https://github.com/yogipatel5/test_project"
+    topics:
+      - python
+      - testing
+      - automation
+    features:
+      issues: true
+      projects: true
+      wiki: true
+      discussions: true
+    collaborators:
+      - username: collaborator1
+        permission: write
+      - username: collaborator2
+        permission: read
+    teams:
+      - name: developers
+        permission: write
+      - name: reviewers
+        permission: maintain
+  lfs:
+    enabled: true
+    patterns:
+      - "*.png"
+      - "*.jpg"
+      - "*.pdf"
+  submodules:
+    - path: lib/common
+      url: https://github.com/yogipatel5/common.git
+      branch: main
 
 # Additional metadata for testing
 metadata:

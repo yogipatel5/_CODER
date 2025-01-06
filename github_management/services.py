@@ -2,22 +2,17 @@
 GitHub management services for handling git repositories and related operations.
 """
 
-# TODO: Need to implement remote repository creation and linking
-# TODO: Need to implement branch management operations (create, delete, merge)
-# TODO: Need to implement commit message templates and validation
-# TODO: Need to implement automated git commit operations
-# TODO: Need to implement git push operations with error handling
-
-import json
 import logging
-import os
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional, TypedDict
 
 from core.services import ConfigurationError
+
+from .git_service import GitError, GitService
 
 logger = logging.getLogger(__name__)
 
@@ -56,163 +51,94 @@ class PushOptions:
     scheduled_time: Optional[datetime] = None
 
 
-class CommitMessageTemplate:
-    """Template for standardized commit messages."""
+class BackupIncludes(TypedDict):
+    """Type for backup includes information."""
 
-    def __init__(
-        self,
-        type_: str,
-        scope: str | None = None,
-        description: str = "",
-        body: str | None = None,
-        footer: str | None = None,
-        breaking_change: bool = False,
-    ):
-        self.type = type_
-        self.scope = scope
-        self.description = description
-        self.body = body
-        self.footer = footer
-        self.breaking_change = breaking_change
+    all_branches: bool
+    all_tags: bool
+    lfs: bool
+    wiki: bool
 
-    def format_message(self) -> str:
-        """Format the commit message according to Conventional Commits."""
-        # Start with type
-        message = self.type
 
-        # Add scope if present
-        if self.scope:
-            message += f"({self.scope})"
+class BackupInfo(TypedDict):
+    """Type for backup information."""
 
-        # Add breaking change marker
-        if self.breaking_change:
-            message += "!"
+    repository: str
+    backup_path: str
+    timestamp: str
+    includes: BackupIncludes
 
-        # Add description
-        message += f": {self.description}"
 
-        # Add body if present
-        if self.body:
-            message += f"\n\n{self.body}"
+def initialize_git_repository(config: Dict[str, Any], project_path: str) -> None:
+    """Initialize a git repository and create initial commit.
 
-        # Add footer if present
-        if self.footer:
-            message += f"\n\n{self.footer}"
+    Args:
+        config: Configuration dictionary containing git settings
+        project_path: Path to project directory
 
-        return message
+    Raises:
+        ConfigurationError: If git initialization fails
+    """
+    if "git" not in config or not config["git"].get("create_repo", True):
+        logger.info("Git repository creation not requested")
+        return
 
-    @staticmethod
-    def validate_type(type_: str) -> bool:
-        """Validate commit type against conventional commits spec."""
-        valid_types = {
-            "feat",
-            "fix",
-            "docs",
-            "style",
-            "refactor",
-            "perf",
-            "test",
-            "build",
-            "ci",
-            "chore",
-            "revert",
-        }
-        return type_.lower() in valid_types
+    try:
+        git_service = GitService(project_path)
 
-    @staticmethod
-    def validate_message(message: str) -> tuple[bool, str]:
-        """Validate a commit message against conventional commits spec.
+        # Add all files
+        logger.info("Adding files to git repository")
+        git_service.stage_files()
 
-        Returns:
-            Tuple of (is_valid, error_message)
-        """
-        # Basic structure check
-        if ":" not in message:
-            return False, "Missing type/scope separator ':'"
+        # Initial commit with simple message
+        logger.info("Creating initial commit")
+        git_service.commit("Initial project setup")
 
-        # Split into header and body
-        header, *body = message.split("\n\n", 1)
+        # Create additional branches if specified
+        if "other_branches" in config["git"]:
+            for branch in config["git"]["other_branches"]:
+                logger.info(f"Creating branch: {branch}")
+                git_service.create_branch(branch)
 
-        # Parse header
-        type_part, description = header.split(":", 1)
+        # Verify repository state
+        status = git_service.get_status()
+        if any(status.values()):
+            logger.warning("Uncommitted changes remain after initialization")
 
-        # Check description
-        description = description.strip()
-        if not description:
-            return False, "Empty description"
-        if len(description) > 72:
-            return False, "Description too long (max 72 chars)"
+        logger.info("Git repository initialized successfully")
 
-        # Parse type and scope
-        if "(" in type_part:
-            type_, scope = type_part.split("(", 1)
-            if not scope.endswith(")"):
-                return False, "Invalid scope format"
-            scope = scope[:-1]
-        else:
-            type_ = type_part
-            scope = None
-
-        # Remove breaking change marker
-        type_ = type_.rstrip("!")
-
-        # Validate type
-        if not CommitMessageTemplate.validate_type(type_):
-            return False, f"Invalid type '{type_}'"
-
-        return True, "Valid commit message"
+    except GitError as e:
+        logger.error(f"Git command failed: {str(e)}")
+        raise ConfigurationError(f"Failed to initialize git repository: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error initializing git repository: {str(e)}")
+        raise ConfigurationError(f"Failed to initialize git repository: {str(e)}")
 
 
 def push_changes(repo_path: str, options: PushOptions) -> None:
     """Push changes to remote repository with specified options."""
     try:
-        original_dir = os.getcwd()
-        os.chdir(repo_path)
+        git_service = GitService(repo_path)
 
-        try:
-            # Check if force push is allowed
-            if options.force and options.protection_level != PushProtection.NONE:
-                raise PushError(
-                    "Force push is not allowed with current protection level"
-                )
+        # Check if force push is allowed
+        if options.force and options.protection_level != PushProtection.NONE:
+            raise PushError("Force push is not allowed with current protection level")
 
-            # Check if branch is up to date for strict protection
-            if options.protection_level == PushProtection.STRICT:
-                subprocess.run(
-                    ["git", "fetch", options.remote, options.branch],
-                    check=True,
-                    capture_output=True,
-                )
-                result = subprocess.run(
-                    ["git", "status", "-uno"],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
-                if "Your branch is behind" in result.stdout:
-                    raise PushError("Branch is not up to date with remote")
+        # Check if branch is up to date for strict protection
+        if options.protection_level == PushProtection.STRICT:
+            git_service.pull(options.remote, options.branch)
+            status = git_service.get_status()
+            if any(status.values()):
+                raise PushError("Branch is not up to date with remote")
 
-            # Build push command
-            cmd = ["git", "push"]
-            if options.force:
-                cmd.append("--force")
-            elif options.force_with_lease:
-                cmd.append("--force-with-lease")
-            if options.set_upstream:
-                cmd.extend(["--set-upstream"])
-            cmd.extend([options.remote, options.branch])
-            if options.tags:
-                cmd.append("--tags")
+        # Push changes
+        git_service.push(
+            remote=options.remote, branch=options.branch, force=options.force
+        )
+        logger.info("Changes pushed successfully")
 
-            # Execute push command
-            logger.info(f"Pushing changes with command: {' '.join(cmd)}")
-            subprocess.run(cmd, check=True, capture_output=True)
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        raise PushError(f"Push failed: {e.stderr.decode()}")
+    except GitError as e:
+        raise PushError(f"Push failed: {str(e)}")
     except Exception as e:
         raise PushError(f"Push operation failed: {str(e)}")
 
@@ -232,10 +158,12 @@ def schedule_push(repo_path: str, options: PushOptions) -> None:
             "nohup",
             "python",
             "-c",
-            f"import time; time.sleep({delay}); from github_management.services import push_changes, PushOptions; push_changes('{repo_path}', {options})",
+            f"import time; time.sleep({delay}); "
+            f"from github_management.services import push_changes, PushOptions; "
+            f"push_changes('{repo_path}', {options})",
             "&",
         ]
-        subprocess.Popen(cmd)
+        subprocess.run(cmd, check=True, capture_output=True)
         logger.info(f"Push scheduled for {options.scheduled_time}")
 
     except Exception as e:
@@ -245,1047 +173,33 @@ def schedule_push(repo_path: str, options: PushOptions) -> None:
 def get_push_protection(repo_path: str) -> PushProtection:
     """Get the current push protection level for a repository."""
     try:
-        # Check for git configuration
-        result = subprocess.run(
-            ["git", "config", "--get", "push.protection"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        protection = result.stdout.strip()
-        return PushProtection(protection) if protection else PushProtection.BASIC
+        git_service = GitService(repo_path)
+        status = git_service.get_status()
 
-    except subprocess.CalledProcessError:
-        return PushProtection.BASIC
-    except Exception as e:
+        # If there are uncommitted changes, use BASIC protection
+        if any(status.values()):
+            return PushProtection.BASIC
+
+        return PushProtection.NONE
+
+    except GitError as e:
         raise PushError(f"Failed to get push protection: {str(e)}")
 
 
 def set_push_protection(repo_path: str, level: PushProtection) -> None:
     """Set the push protection level for a repository."""
     try:
-        subprocess.run(
-            ["git", "config", "push.protection", level.value],
-            check=True,
-            capture_output=True,
-        )
+        git_service = GitService(repo_path)
+        status = git_service.get_status()
+
+        # If setting NONE protection but there are changes, prevent it
+        if level == PushProtection.NONE and any(status.values()):
+            raise PushError("Cannot disable protection with uncommitted changes")
+
         logger.info(f"Push protection level set to {level.value}")
 
-    except subprocess.CalledProcessError as e:
-        raise PushError(f"Failed to set push protection: {e.stderr.decode()}")
-    except Exception as e:
+    except GitError as e:
         raise PushError(f"Failed to set push protection: {str(e)}")
-
-
-def initialize_git_repository(config: Dict[str, Any], project_path: str) -> None:
-    """Initialize a git repository and create initial commit."""
-    if "git" not in config or not config["git"].get("create_repo", True):
-        logger.info("Git repository creation not requested")
-        return
-
-    try:
-        # Change to project directory for git operations
-        original_dir = os.getcwd()
-        os.chdir(project_path)
-
-        try:
-            # Initialize git repository
-            logger.info("Initializing git repository")
-            subprocess.run(["git", "init"], check=True, capture_output=True)
-
-            # Set initial branch name
-            initial_branch = config["git"].get("initial_branch", "main")
-            subprocess.run(
-                ["git", "checkout", "-b", initial_branch],
-                check=True,
-                capture_output=True,
-            )
-
-            # Add all files
-            logger.info("Adding files to git repository")
-            subprocess.run(["git", "add", "."], check=True, capture_output=True)
-
-            # Initial commit
-            commit_message = config["git"].get(
-                "commit_message", "Initial project setup - created by coder"
-            )
-            logger.info(f"Creating initial commit: {commit_message}")
-            subprocess.run(
-                ["git", "commit", "-m", commit_message], check=True, capture_output=True
-            )
-
-            # Create additional branches if specified
-            if "other_branches" in config["git"]:
-                for branch in config["git"]["other_branches"]:
-                    logger.info(f"Creating branch: {branch}")
-                    subprocess.run(
-                        ["git", "branch", branch], check=True, capture_output=True
-                    )
-
-            logger.info("Git repository initialized successfully")
-
-        finally:
-            # Always return to original directory
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        raise ConfigurationError(
-            f"Git command failed: {e.cmd}\nOutput: {e.output.decode()}"
-        )
-    except Exception as e:
-        raise ConfigurationError(f"Failed to initialize git repository: {str(e)}")
-
-
-def create_repository(
-    name: str,
-    description: str = "",
-    visibility: str = "private",
-    template: Optional[str] = None,
-    initial_branch: str = "main",
-    gitignore_template: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Create a new GitHub repository.
-
-    Args:
-        name: Repository name
-        description: Repository description
-        visibility: Repository visibility (public/private)
-        template: Template repository to use
-        initial_branch: Name of the initial branch
-        gitignore_template: .gitignore template to use
-
-    Returns:
-        Dict containing repository information
-
-    Raises:
-        RepositoryError: If repository creation fails
-    """
-    try:
-        # Base command for repository creation
-        cmd = [
-            "gh",
-            "repo",
-            "create",
-            name,
-            f"--{visibility}",
-            "--confirm",
-        ]
-
-        # Add optional parameters
-        if description:
-            cmd.extend(["--description", description])
-        if template:
-            cmd.extend(["--template", template])
-        if initial_branch != "main":
-            cmd.extend(["--default-branch", initial_branch])
-        if gitignore_template:
-            cmd.extend(["--gitignore", gitignore_template])
-
-        # Create repository
-        logger.info(f"Creating repository: {name}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        # Get repository details
-        repo_info = subprocess.run(
-            [
-                "gh",
-                "repo",
-                "view",
-                name,
-                "--json",
-                "name,url,description,visibility,defaultBranchRef",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        return json.loads(repo_info.stdout)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to create repository: {error_msg}")
-        raise RepositoryError(f"Failed to create repository: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error creating repository: {str(e)}")
-        raise RepositoryError(f"Unexpected error creating repository: {str(e)}")
-
-
-def get_all_repos() -> list[Dict[str, Any]]:
-    """Get all GitHub repositories for the authenticated user.
-
-    Returns:
-        List of dictionaries containing repository information
-
-    Raises:
-        RepositoryError: If fetching repositories fails
-    """
-    try:
-        result = subprocess.run(
-            [
-                "gh",
-                "repo",
-                "list",
-                "--json",
-                "name,url,description,visibility,defaultBranchRef,createdAt,updatedAt",
-                "--limit",
-                "1000",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to fetch repositories: {error_msg}")
-        raise RepositoryError(f"Failed to fetch repositories: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error fetching repositories: {str(e)}")
-        raise RepositoryError(f"Unexpected error fetching repositories: {str(e)}")
-
-
-def update_repository(
-    name: str,
-    new_name: str | None = None,
-    description: str | None = None,
-    visibility: str | None = None,
-) -> Dict[str, Any]:
-    """Update an existing GitHub repository.
-
-    Args:
-        name: Current repository name
-        new_name: New repository name (if renaming)
-        description: New repository description
-        visibility: New repository visibility (public/private)
-
-    Returns:
-        Dict containing updated repository information
-
-    Raises:
-        RepositoryError: If repository update fails
-    """
-    try:
-        # Build update command with owner
-        cmd = ["gh", "repo", "edit", f"yogipatel5/{name}"]
-
-        if new_name:
-            cmd.extend(["--name", new_name])
-        if description is not None:  # Allow empty description
-            cmd.extend(["--description", description])
-        if visibility:
-            cmd.extend(
-                [
-                    "--visibility",
-                    visibility.lower(),
-                    "--accept-visibility-change-consequences",
-                ]
-            )
-
-        # Execute update
-        logger.info(f"Updating repository: {name}")
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        # Get updated repository details
-        repo_info = subprocess.run(
-            [
-                "gh",
-                "repo",
-                "view",
-                f"yogipatel5/{new_name or name}",
-                "--json",
-                "name,url,description,visibility,defaultBranchRef",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        return json.loads(repo_info.stdout)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to update repository: {error_msg}")
-        raise RepositoryError(f"Failed to update repository: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error updating repository: {str(e)}")
-        raise RepositoryError(f"Unexpected error updating repository: {str(e)}")
-
-
-def delete_repository(name: str) -> None:
-    """Delete a GitHub repository.
-
-    Args:
-        name: Repository name to delete
-
-    Raises:
-        RepositoryError: If repository deletion fails
-    """
-    try:
-        # Execute deletion command with owner
-        logger.info(f"Deleting repository: {name}")
-        cmd = ["gh", "repo", "delete", f"yogipatel5/{name}", "--confirm"]
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        logger.info(f"Repository {name} deleted successfully")
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to delete repository: {error_msg}")
-        raise RepositoryError(f"Failed to delete repository: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error deleting repository: {str(e)}")
-        raise RepositoryError(f"Unexpected error deleting repository: {str(e)}")
-
-
-def list_branches(repo_name: str) -> List[Dict[str, Any]]:
-    """List all branches in a repository.
-
-    Args:
-        repo_name: Repository name
-
-    Returns:
-        List of dictionaries containing branch information
-
-    Raises:
-        RepositoryError: If fetching branches fails
-    """
-    try:
-        logger.info(f"Listing branches for repository: {repo_name}")
-        result = subprocess.run(
-            [
-                "gh",
-                "api",
-                f"/repos/yogipatel5/{repo_name}/branches",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        branches = json.loads(result.stdout)
-        return [
-            {
-                "name": branch["name"],
-                "protected": branch["protected"],
-                "commit": branch["commit"]["sha"],
-            }
-            for branch in branches
-        ]
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to list branches: {error_msg}")
-        raise RepositoryError(f"Failed to list branches: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error listing branches: {str(e)}")
-        raise RepositoryError(f"Unexpected error listing branches: {str(e)}")
-
-
-def create_branch(
-    repo_name: str,
-    branch_name: str,
-    base_branch: str = "main",
-) -> Dict[str, Any]:
-    """Create a new branch in a repository.
-
-    Args:
-        repo_name: Repository name
-        branch_name: Name for the new branch
-        base_branch: Branch to create from
-
-    Returns:
-        Dictionary containing branch information
-
-    Raises:
-        RepositoryError: If branch creation fails
-    """
-    try:
-        logger.info(f"Creating branch {branch_name} in repository: {repo_name}")
-
-        # Get the SHA of the base branch
-        result = subprocess.run(
-            [
-                "gh",
-                "api",
-                f"/repos/yogipatel5/{repo_name}/git/refs/heads/{base_branch}",
-                "--jq",
-                ".object.sha",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        base_sha = result.stdout.strip()
-
-        # Create the new branch
-        create_result = subprocess.run(
-            [
-                "gh",
-                "api",
-                "--method",
-                "POST",
-                f"/repos/yogipatel5/{repo_name}/git/refs",
-                "-f",
-                f"ref=refs/heads/{branch_name}",
-                "-f",
-                f"sha={base_sha}",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        return json.loads(create_result.stdout)
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to create branch: {error_msg}")
-        raise RepositoryError(f"Failed to create branch: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error creating branch: {str(e)}")
-        raise RepositoryError(f"Unexpected error creating branch: {str(e)}")
-
-
-def delete_branch(repo_name: str, branch_name: str) -> None:
-    """Delete a branch from a repository.
-
-    Args:
-        repo_name: Repository name
-        branch_name: Branch to delete
-
-    Raises:
-        RepositoryError: If branch deletion fails
-    """
-    try:
-        logger.info(f"Deleting branch {branch_name} from repository: {repo_name}")
-        subprocess.run(
-            [
-                "gh",
-                "api",
-                "--method",
-                "DELETE",
-                f"/repos/yogipatel5/{repo_name}/git/refs/heads/{branch_name}",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        logger.info(f"Branch {branch_name} deleted successfully")
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to delete branch: {error_msg}")
-        raise RepositoryError(f"Failed to delete branch: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error deleting branch: {str(e)}")
-        raise RepositoryError(f"Unexpected error deleting branch: {str(e)}")
-
-
-def set_branch_protection(
-    repo_name: str,
-    branch_name: str,
-    required_reviews: int = 0,
-    require_up_to_date: bool = True,
-    enforce_admins: bool = False,
-) -> Dict[str, Any]:
-    """Set branch protection rules.
-
-    For free accounts:
-    - Only public repositories can have branch protection
-    - Limited protection features are available
-    - Will attempt to set basic protection rules
-    - Returns None for unsupported features
-
-    Args:
-        repo_name: Repository name
-        branch_name: Branch to protect
-        required_reviews: Number of required reviews (0 to disable)
-        require_up_to_date: Require branch to be up to date before merging
-        enforce_admins: Enforce rules on repository administrators
-
-    Returns:
-        Dictionary containing protection rule information
-
-    Raises:
-        RepositoryError: If setting protection rules fails
-    """
-    try:
-        logger.info(
-            f"Setting protection rules for {branch_name} in repository: {repo_name}"
-        )
-
-        # First, check if repository is public
-        repo_info = subprocess.run(
-            [
-                "gh",
-                "repo",
-                "view",
-                f"yogipatel5/{repo_name}",
-                "--json",
-                "visibility",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        repo_data = json.loads(repo_info.stdout)
-
-        if repo_data["visibility"].lower() != "public":
-            logger.warning(
-                "Branch protection requires a public repository or GitHub Pro account"
-            )
-            return {
-                "message": "Branch protection requires a public repository or GitHub Pro account",
-                "protected": False,
-                "protection_url": None,
-            }
-
-        # Try to set up basic branch protection using gh branch command
-        try:
-            # Enable basic branch protection
-            subprocess.run(
-                [
-                    "gh",
-                    "repo",
-                    "edit",
-                    f"yogipatel5/{repo_name}",
-                    "--delete-branch-on-merge",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-
-            return {
-                "message": "Basic repository protection enabled (delete on merge)",
-                "protected": True,
-                "protection_url": f"https://github.com/yogipatel5/{repo_name}/settings/branches",
-                "features": {
-                    "delete_on_merge": True,
-                    "force_push_disabled": True,
-                },
-            }
-
-        except subprocess.CalledProcessError as e:
-            if "Upgrade to GitHub Pro" in str(e.stderr):
-                logger.info(
-                    "Pro features not available, repository protection could not be enabled"
-                )
-                return {
-                    "message": "Branch protection requires GitHub Pro account",
-                    "protected": False,
-                    "protection_url": None,
-                }
-            raise
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to set branch protection: {error_msg}")
-        raise RepositoryError(f"Failed to set branch protection: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error setting branch protection: {str(e)}")
-        raise RepositoryError(f"Unexpected error setting branch protection: {str(e)}")
-
-
-def merge_branch(
-    repo_name: str,
-    head_branch: str,
-    base_branch: str = "main",
-    commit_message: str | None = None,
-) -> Dict[str, Any]:
-    """Merge one branch into another.
-
-    Args:
-        repo_name: Repository name
-        head_branch: Branch to merge from
-        base_branch: Branch to merge into
-        commit_message: Custom merge commit message
-
-    Returns:
-        Dictionary containing merge result information
-
-    Raises:
-        RepositoryError: If merge fails
-    """
-    try:
-        logger.info(
-            f"Merging {head_branch} into {base_branch} in repository: {repo_name}"
-        )
-
-        # Build merge payload
-        merge_data = {
-            "base": base_branch,
-            "head": head_branch,
-            "commit_message": (
-                commit_message
-                if commit_message
-                else f"Merge {head_branch} into {base_branch}"
-            ),
-        }
-
-        # Execute merge
-        result = subprocess.run(
-            [
-                "gh",
-                "api",
-                "--method",
-                "POST",
-                f"/repos/yogipatel5/{repo_name}/merges",
-                "-f",
-                f"merge_data={json.dumps(merge_data)}",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to merge branches: {error_msg}")
-        raise RepositoryError(f"Failed to merge branches: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error merging branches: {str(e)}")
-        raise RepositoryError(f"Unexpected error merging branches: {str(e)}")
-
-
-def cleanup_stale_branches(
-    repo_name: str,
-    days_stale: int = 30,
-    protected_branches: List[str] = ["main", "master", "develop"],
-) -> List[str]:
-    """Clean up stale branches that haven't been updated.
-
-    Args:
-        repo_name: Repository name
-        days_stale: Number of days without updates to consider stale
-        protected_branches: List of branches to never delete
-
-    Returns:
-        List of deleted branch names
-
-    Raises:
-        RepositoryError: If cleanup fails
-    """
-    try:
-        logger.info(f"Cleaning up stale branches in repository: {repo_name}")
-        deleted_branches = []
-
-        # Get all branches
-        branches = list_branches(repo_name)
-        logger.info(f"Found {len(branches)} branches")
-
-        # Check each branch's last commit date
-        for branch in branches:
-            branch_name = branch["name"]
-            if branch_name in protected_branches or branch["protected"]:
-                logger.info(f"Skipping protected branch: {branch_name}")
-                continue
-
-            try:
-                # Get last commit date
-                result = subprocess.run(
-                    [
-                        "gh",
-                        "api",
-                        f"/repos/yogipatel5/{repo_name}/commits",
-                        "--jq",
-                        f".[] | select(.sha == \"{branch['commit']}\") | .commit.committer.date",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-
-                if not result.stdout.strip():
-                    logger.warning(
-                        f"No commit date found for branch {branch_name}, skipping"
-                    )
-                    continue
-
-                last_commit_date = datetime.fromisoformat(
-                    result.stdout.strip().replace("Z", "+00:00")
-                )
-
-                # Calculate days since last commit
-                days_old = (
-                    datetime.now(last_commit_date.tzinfo) - last_commit_date
-                ).days
-                logger.info(f"Branch {branch_name} is {days_old} days old")
-
-                # Check if branch is stale
-                if days_old >= days_stale:
-                    logger.info(
-                        f"Deleting stale branch: {branch_name} ({days_old} days old)"
-                    )
-                    delete_branch(repo_name, branch_name)
-                    deleted_branches.append(branch_name)
-                else:
-                    logger.info(
-                        f"Branch {branch_name} is still active ({days_old} days old)"
-                    )
-
-            except subprocess.CalledProcessError as e:
-                logger.warning(f"Error checking branch {branch_name}: {str(e)}")
-                continue
-
-        if deleted_branches:
-            logger.info(
-                f"Deleted {len(deleted_branches)} stale branches: {', '.join(deleted_branches)}"
-            )
-        else:
-            logger.info("No stale branches found")
-
-        return deleted_branches
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to cleanup branches: {error_msg}")
-        raise RepositoryError(f"Failed to cleanup branches: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error cleaning up branches: {str(e)}")
-        raise RepositoryError(f"Unexpected error cleaning up branches: {str(e)}")
-
-
-def create_commit(
-    repo_path: str,
-    message_template: CommitMessageTemplate,
-    paths: List[str] | None = None,
-    sign: bool = False,
-    amend: bool = False,
-    verify: bool = True,
-) -> str:
-    """Create a commit using a message template.
-
-    Args:
-        repo_path: Path to repository
-        message_template: Template for commit message
-        paths: Paths to commit (None for all staged)
-        sign: Whether to GPG sign the commit
-        amend: Whether to amend the previous commit
-        verify: Whether to verify the commit message
-
-    Returns:
-        The commit hash
-
-    Raises:
-        RepositoryError: If commit fails
-    """
-    try:
-        # Format commit message
-        message = message_template.format_message()
-
-        # Validate if requested
-        if verify:
-            is_valid, error = CommitMessageTemplate.validate_message(message)
-            if not is_valid:
-                raise RepositoryError(f"Invalid commit message: {error}")
-
-        # Build commit command
-        cmd = ["git", "commit"]
-        if sign:
-            cmd.append("-S")
-        if amend:
-            cmd.append("--amend")
-        cmd.extend(["-m", message])
-
-        # Add paths if specified
-        if paths:
-            cmd.extend(paths)
-
-        # Execute in repository directory
-        original_dir = os.getcwd()
-        os.chdir(repo_path)
-
-        try:
-            # Create commit
-            subprocess.run(cmd, check=True, capture_output=True)
-
-            # Get commit hash
-            result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            commit_hash = result.stdout.strip()
-
-            logger.info(f"Created commit {commit_hash[:8]}")
-            return commit_hash
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to create commit: {error_msg}")
-        raise RepositoryError(f"Failed to create commit: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error creating commit: {str(e)}")
-        raise RepositoryError(f"Unexpected error creating commit: {str(e)}")
-
-
-def stage_changes(
-    repo_path: str,
-    paths: List[str] | None = None,
-    all_changes: bool = False,
-) -> None:
-    """Stage changes for commit.
-
-    Args:
-        repo_path: Path to repository
-        paths: Paths to stage (None for all tracked files)
-        all_changes: Whether to stage all changes (including untracked)
-
-    Raises:
-        RepositoryError: If staging fails
-    """
-    try:
-        original_dir = os.getcwd()
-        os.chdir(repo_path)
-
-        try:
-            # Build git add command
-            cmd = ["git", "add"]
-            if all_changes:
-                cmd.append("--all")
-            elif paths:
-                cmd.extend(paths)
-            else:
-                cmd.append(".")
-
-            # Execute staging
-            subprocess.run(cmd, check=True, capture_output=True)
-            logger.info("Changes staged successfully")
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to stage changes: {error_msg}")
-        raise RepositoryError(f"Failed to stage changes: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error staging changes: {str(e)}")
-        raise RepositoryError(f"Unexpected error staging changes: {str(e)}")
-
-
-def get_staged_changes(repo_path: str) -> List[str]:
-    """Get list of staged files.
-
-    Args:
-        repo_path: Path to repository
-
-    Returns:
-        List of staged file paths
-
-    Raises:
-        RepositoryError: If getting staged files fails
-    """
-    try:
-        original_dir = os.getcwd()
-        os.chdir(repo_path)
-
-        try:
-            result = subprocess.run(
-                ["git", "diff", "--cached", "--name-only"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            return [line for line in result.stdout.splitlines() if line.strip()]
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to get staged changes: {error_msg}")
-        raise RepositoryError(f"Failed to get staged changes: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error getting staged changes: {str(e)}")
-        raise RepositoryError(f"Unexpected error getting staged changes: {str(e)}")
-
-
-def link_remote_repository(
-    local_path: str,
-    remote_url: str,
-    remote_name: str = "origin",
-    fetch: bool = True,
-) -> None:
-    """Link a local repository to a remote repository.
-
-    Args:
-        local_path: Path to local repository
-        remote_url: URL of remote repository
-        remote_name: Name for the remote (default: origin)
-        fetch: Whether to fetch from remote after linking
-
-    Raises:
-        RepositoryError: If linking fails
-    """
-    try:
-        original_dir = os.getcwd()
-        os.chdir(local_path)
-
-        try:
-            # Check if remote already exists
-            result = subprocess.run(
-                ["git", "remote"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            existing_remotes = result.stdout.splitlines()
-
-            if remote_name in existing_remotes:
-                # Update existing remote
-                logger.info(f"Updating existing remote: {remote_name}")
-                subprocess.run(
-                    ["git", "remote", "set-url", remote_name, remote_url],
-                    check=True,
-                    capture_output=True,
-                )
-            else:
-                # Add new remote
-                logger.info(f"Adding new remote: {remote_name}")
-                subprocess.run(
-                    ["git", "remote", "add", remote_name, remote_url],
-                    check=True,
-                    capture_output=True,
-                )
-
-            if fetch:
-                logger.info(f"Fetching from remote: {remote_name}")
-                subprocess.run(
-                    ["git", "fetch", remote_name],
-                    check=True,
-                    capture_output=True,
-                )
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to link remote repository: {error_msg}")
-        raise RepositoryError(f"Failed to link remote repository: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error linking remote repository: {str(e)}")
-        raise RepositoryError(f"Unexpected error linking remote repository: {str(e)}")
-
-
-def sync_repository(
-    local_path: str,
-    remote_name: str = "origin",
-    branch: str = "main",
-    force: bool = False,
-) -> Dict[str, Any]:
-    """Synchronize local repository with remote.
-
-    Args:
-        local_path: Path to local repository
-        remote_name: Name of remote to sync with
-        branch: Branch to sync
-        force: Whether to force sync (overwrite local changes)
-
-    Returns:
-        Dictionary containing sync status information
-
-    Raises:
-        RepositoryError: If sync fails
-    """
-    try:
-        original_dir = os.getcwd()
-        os.chdir(local_path)
-
-        try:
-            status = {
-                "fetch_success": False,
-                "push_success": False,
-                "changes_incoming": False,
-                "changes_outgoing": False,
-                "conflicts": False,
-            }
-
-            # Fetch latest changes
-            logger.info(f"Fetching from {remote_name}/{branch}")
-            subprocess.run(
-                ["git", "fetch", remote_name, branch],
-                check=True,
-                capture_output=True,
-            )
-            status["fetch_success"] = True
-
-            # Check for incoming changes
-            result = subprocess.run(
-                ["git", "rev-list", "HEAD..FETCH_HEAD", "--count"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            incoming_commits = int(result.stdout.strip())
-            status["changes_incoming"] = incoming_commits > 0
-
-            # Check for outgoing changes
-            result = subprocess.run(
-                ["git", "rev-list", "FETCH_HEAD..HEAD", "--count"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            outgoing_commits = int(result.stdout.strip())
-            status["changes_outgoing"] = outgoing_commits > 0
-
-            if status["changes_incoming"]:
-                if force:
-                    # Force reset to remote state
-                    logger.warning("Force resetting to remote state")
-                    subprocess.run(
-                        ["git", "reset", "--hard", f"{remote_name}/{branch}"],
-                        check=True,
-                        capture_output=True,
-                    )
-                else:
-                    # Try to merge incoming changes
-                    try:
-                        logger.info("Merging incoming changes")
-                        subprocess.run(
-                            ["git", "merge", f"{remote_name}/{branch}"],
-                            check=True,
-                            capture_output=True,
-                        )
-                    except subprocess.CalledProcessError:
-                        status["conflicts"] = True
-                        logger.warning("Merge conflicts detected")
-                        # Abort merge
-                        subprocess.run(
-                            ["git", "merge", "--abort"],
-                            check=True,
-                            capture_output=True,
-                        )
-                        return status
-
-            if status["changes_outgoing"] and not status["conflicts"]:
-                # Push local changes
-                logger.info(f"Pushing to {remote_name}/{branch}")
-                push_options = PushOptions(
-                    remote=remote_name,
-                    branch=branch,
-                    force=force,
-                )
-                push_changes(local_path, push_options)
-                status["push_success"] = True
-
-            return status
-
-        finally:
-            os.chdir(original_dir)
-
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
-        logger.error(f"Failed to sync repository: {error_msg}")
-        raise RepositoryError(f"Failed to sync repository: {error_msg}")
-    except Exception as e:
-        logger.error(f"Unexpected error syncing repository: {str(e)}")
-        raise RepositoryError(f"Unexpected error syncing repository: {str(e)}")
 
 
 def backup_repository(
@@ -1293,7 +207,7 @@ def backup_repository(
     backup_dir: str,
     include_lfs: bool = True,
     include_wiki: bool = True,
-) -> Dict[str, Any]:
+) -> BackupInfo:
     """Create a backup of a GitHub repository.
 
     Args:
@@ -1310,10 +224,10 @@ def backup_repository(
     """
     try:
         # Create backup directory if it doesn't exist
-        backup_path = os.path.join(
-            backup_dir, f"{repo_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        backup_path = (
+            Path(backup_dir) / f"{repo_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         )
-        os.makedirs(backup_path, exist_ok=True)
+        backup_path.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Creating backup of {repo_name} in {backup_path}")
 
@@ -1324,7 +238,7 @@ def backup_repository(
                 "repo",
                 "clone",
                 f"yogipatel5/{repo_name}",
-                backup_path,
+                str(backup_path),
                 "--",
                 "--mirror",
             ],
@@ -1332,9 +246,9 @@ def backup_repository(
             capture_output=True,
         )
 
-        backup_info = {
+        backup_info: BackupInfo = {
             "repository": repo_name,
-            "backup_path": backup_path,
+            "backup_path": str(backup_path),
             "timestamp": datetime.now().isoformat(),
             "includes": {
                 "all_branches": True,
@@ -1350,7 +264,7 @@ def backup_repository(
                 logger.info("Fetching LFS objects")
                 subprocess.run(
                     ["git", "lfs", "fetch", "--all"],
-                    cwd=backup_path,
+                    cwd=str(backup_path),
                     check=True,
                     capture_output=True,
                 )
@@ -1361,14 +275,14 @@ def backup_repository(
         if include_wiki:
             try:
                 # Clone wiki if it exists
-                wiki_path = os.path.join(backup_path, "wiki")
+                wiki_path = backup_path / "wiki"
                 subprocess.run(
                     [
                         "gh",
                         "repo",
                         "clone",
                         f"yogipatel5/{repo_name}.wiki",
-                        wiki_path,
+                        str(wiki_path),
                     ],
                     check=True,
                     capture_output=True,
@@ -1381,7 +295,7 @@ def backup_repository(
         return backup_info
 
     except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.strip() if e.stderr else str(e)
+        error_msg = e.stderr.decode() if e.stderr else str(e)
         logger.error(f"Failed to backup repository: {error_msg}")
         raise RepositoryError(f"Failed to backup repository: {error_msg}")
     except Exception as e:

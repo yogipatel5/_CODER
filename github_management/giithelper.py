@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-# TODO: Need to implement GitHub repository creation with templates
-# TODO: Need to implement repository visibility management (public/private)
-# TODO: Need to implement repository collaborator management
-# TODO: Need to implement repository settings management
-# TODO: Need to implement repository webhook management
+"""
+GitHub repository management tool.
+"""
 
 import argparse
 import csv
@@ -13,12 +11,12 @@ import subprocess
 import sys
 from datetime import datetime
 
+from .git_service import GitError, GitService
 from .services import (
     PushError,
     PushOptions,
     PushProtection,
     get_push_protection,
-    push_changes,
     schedule_push,
     set_push_protection,
 )
@@ -70,7 +68,7 @@ def save_repos_to_csv():
     return filename
 
 
-def update_descriptions(csv_file, dry_run=False):
+def update_descriptions(csv_file: str, dry_run: bool = False) -> list[str]:
     """Update GitHub repository descriptions based on CSV file"""
     updated_repos = []
     with open(csv_file, "r") as csvfile:
@@ -108,7 +106,7 @@ def update_descriptions(csv_file, dry_run=False):
     return updated_repos
 
 
-def process_deletions(csv_file, dry_run=False):
+def process_deletions(csv_file: str, dry_run: bool = False) -> list[str]:
     """Process the CSV file and delete repositories marked for removal"""
     removed_repos = []
     with open(csv_file, "r") as csvfile:
@@ -135,7 +133,8 @@ def process_deletions(csv_file, dry_run=False):
     return removed_repos
 
 
-def print_usage():
+def print_usage() -> None:
+    """Print usage information."""
     print("Usage:")
     print("  Create new CSV:        python giithelper.py")
     print(
@@ -146,9 +145,11 @@ def print_usage():
     )
 
 
-def push_repo(args) -> None:
+def push_repo(args: argparse.Namespace) -> None:
     """Push changes to remote repository."""
     try:
+        git_service = GitService(".")
+
         options = PushOptions(
             remote=args.remote,
             branch=args.branch,
@@ -166,10 +167,12 @@ def push_repo(args) -> None:
             schedule_push(".", options)
             print(f"Push scheduled for {args.schedule}")
         else:
-            push_changes(".", options)
+            git_service.push(
+                remote=options.remote, branch=options.branch, force=options.force
+            )
             print("Changes pushed successfully")
 
-    except PushError as e:
+    except (GitError, PushError) as e:
         print(f"Error pushing changes: {e}")
         sys.exit(1)
     except ValueError as e:
@@ -177,7 +180,7 @@ def push_repo(args) -> None:
         sys.exit(1)
 
 
-def get_protection(args) -> None:
+def get_protection(args: argparse.Namespace) -> None:
     """Get push protection level for repository."""
     try:
         protection = get_push_protection(".")
@@ -187,7 +190,7 @@ def get_protection(args) -> None:
         sys.exit(1)
 
 
-def set_protection(args) -> None:
+def set_protection(args: argparse.Namespace) -> None:
     """Set push protection level for repository."""
     try:
         set_push_protection(".", PushProtection(args.level))
