@@ -1,0 +1,8 @@
+django==5.1.4
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+redis==5.0.1
+django-redis==5.4.0
+django-stubs==5.1.1
+django-stubs-ext==5.1.1
+mypy==1.8.0 
