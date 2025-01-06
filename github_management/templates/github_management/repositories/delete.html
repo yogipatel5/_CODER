@@ -1,0 +1,95 @@
+{% extends "github_management/base.html" %}
+
+{% block title %}Delete {{ repository.name }} - GitHub Management{% endblock title %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>Delete Repository</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Are you sure you want to delete this repository?</h5>
+                <p class="card-text">
+                    You are about to delete the repository <strong>{{ repository.name }}</strong>. 
+                    This action cannot be undone.
+                </p>
+
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">This will delete:</h6>
+                    <ul class="mb-0">
+                        <li>All repository files and history</li>
+                        <li>All branches and tags</li>
+                        <li>All issues and pull requests</li>
+                        <li>All collaborator associations</li>
+                        <li>All repository settings</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="confirm_name" class="form-label">
+                            Please type <strong>{{ repository.name }}</strong> to confirm
+                        </label>
+                        <input type="text" class="form-control" id="confirm_name" name="confirm_name" required
+                               pattern="{{ repository.name }}" title="Must match repository name exactly">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'github_management:repository_detail' repository.name %}" 
+                           class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                            I understand, delete this repository
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">Important Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>This action cannot be undone</h6>
+                <p class="text-muted small">
+                    Deleting a repository will permanently remove all of its contents and associated data.
+                    Make sure you have backed up any important information.
+                </p>
+
+                <h6>Alternative Options</h6>
+                <p class="text-muted small">
+                    Consider these alternatives before deleting:
+                </p>
+                <ul class="text-muted small">
+                    <li>Archive the repository to make it read-only</li>
+                    <li>Transfer ownership to another user</li>
+                    <li>Make the repository private</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmInput = document.getElementById('confirm_name');
+        const deleteButton = document.getElementById('deleteButton');
+        const repositoryName = '{{ repository.name }}';
+
+        confirmInput.addEventListener('input', function() {
+            deleteButton.disabled = this.value !== repositoryName;
+        });
+    });
+</script>
+{% endblock extra_js %} 
