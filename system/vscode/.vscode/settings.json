@@ -1,0 +1,65 @@
+{
+		// Base project settings
+		"editor.formatOnSave": true,
+		"editor.formatOnPaste": true,
+		"editor.defaultFormatter": null,
+		
+		// Web Development Settings
+		"[javascript]": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.formatOnSave": true
+		},
+		"[typescript]": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.formatOnSave": true
+		},
+		"[json]": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[html]": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[css]": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+
+		// Project-specific Python settings (overrides)
+		"python.analysis.extraPaths": [
+				"${workspaceFolder}",
+				"${workspaceFolder}/src"
+		],
+		"python.testing.pytestEnabled": true,
+
+
+		// Terminal Colors
+
+		// Ruff settings (reasonable defaults)
+		"ruff.enable": true,
+		"ruff.organizeImports": true,
+		"[python]": {
+				"editor.codeActionsOnSave": {
+					"source.fixAll.ruff": "explicit",
+					"source.organizeImports.ruff": "explicit"
+				}
+		},
+		"ruff.lint.select": [
+				"E",   // pycodestyle errors
+				"F",   // pyflakes
+				"I",   // isort
+				"UP"   // pyupgrade
+		],
+		// Ignore some common annoying rules
+		"ruff.lint.ignore": [
+				"E501"  // Line too long
+		],
+
+		// Mypy - start with basic type checking
+		"python.linting.mypyEnabled": true,
+		"python.linting.mypyArgs": [
+				"--ignore-missing-imports",
+				"--follow-imports=silent",
+				"--show-column-numbers",
+				"--disallow-untyped-defs",
+				"--disallow-incomplete-defs"
+		]
+} 

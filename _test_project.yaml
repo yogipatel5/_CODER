@@ -1,0 +1,153 @@
+# Test project configuration
+project_name: test_project
+path: ~/Code/Projects/test
+
+# Project structure configuration
+structure:
+  template: true
+  template_name: .templates/django_project
+  directories:
+    - src
+    - tests
+    - docs
+    - config
+    - scripts
+    - .vscode
+  files:
+    - src/__init__.py
+    - tests/__init__.py
+    - docs/README.md
+    - config/settings.yaml
+    - scripts/setup.sh
+    - .vscode/settings.json
+    - requirements.txt
+    - setup.py
+    - README.md
+    - .gitignore
+  mypy:
+    global_options:
+      python_version: "3.11"
+      warn_return_any: true
+      warn_unused_configs: true
+      disallow_untyped_defs: true
+      disallow_incomplete_defs: true
+      check_untyped_defs: true
+      disallow_untyped_decorators: true
+      no_implicit_optional: true
+      warn_redundant_casts: true
+      warn_unused_ignores: true
+      warn_no_return: true
+      warn_unreachable: true
+      strict_optional: true
+      ignore_missing_imports: true
+    module_options:
+      "tests.*":
+        disallow_untyped_defs: false
+        check_untyped_defs: false
+      "*.migrations.*":
+        ignore_errors: true
+  vscode:
+    settings:
+      python.linting.enabled: true
+      python.linting.mypyEnabled: true
+      python.linting.mypyArgs:
+        - --ignore-missing-imports
+    extensions:
+      - ms-python.python
+      - ms-python.vscode-pylance
+      - ms-python.black-formatter
+      - ms-python.isort
+      - ms-python.mypy
+      - ms-python.flake8
+      - ms-python.black
+      - ms-python.isort
+      - ms-python.mypy
+      - ms-python.flake8
+
+# Template configuration
+templates:
+  copy_all: false
+  files:
+    - .templates/project/.cursorrules
+    - .templates/project/.vscode/settings.json
+    - .templates/project/README.md
+    - .templates/project/.gitignore
+
+# Conda environment configuration
+conda:
+  create_conda_env: true
+  python_version: "3.11"
+  dependencies:
+    - pytest
+    - black
+    - flake8
+    - mypy
+    - isort
+
+# Git configuration
+git:
+  create_local_repo: true
+  create_remote_repo: true
+  initial_branch: main
+  commit_message: "Initial project setup for testing"
+  other_branches:
+    - develop
+    - staging
+  branch_protection:
+    main:
+      required_reviews: 1
+      require_signatures: true
+      require_linear_history: true
+      allow_force_push: false
+    develop:
+      required_reviews: 1
+      allow_force_push: true
+  hooks:
+    pre-commit:
+      - black
+      - ruff
+      - mypy
+    pre-push:
+      - pytest
+  remote:
+    name: test-project-yaml
+    provider: github
+    visibility: private
+    description: "A test project configuration for automated testing"
+    homepage: "https://github.com/yogipatel5/test_project"
+    topics:
+      - python
+      - testing
+    features:
+      issues: true
+      projects: true
+      wiki: true
+      discussions: true
+    collaborators:
+      - username: collaborator1
+        permission: write
+      - username: collaborator2
+        permission: read
+    teams:
+      - name: developers
+        permission: write
+      - name: reviewers
+        permission: maintain
+  lfs:
+    enabled: true
+    patterns:
+      - "*.png"
+      - "*.jpg"
+      - "*.pdf"
+  submodules:
+    - path: lib/common
+      url: https://github.com/yogipatel5/common.git
+      branch: main
+
+# Additional metadata for testing
+metadata:
+  author: "Test User"
+  email: "test@example.com"
+  description: "A test project configuration for automated testing"
+  version: "0.1.0"
+  license: "MIT"

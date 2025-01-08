@@ -1,0 +1,28 @@
+{
+	"recommendations": [
+		// Base Development Extensions
+		"vscode-icons-team.vscode-icons", // File icons
+		"aaron-bond.better-comments", // Better comments
+		"usernamehw.errorlens", // Error highlighting
+		"christian-kohler.path-intellisense", // Path completion
+		"yzhang.markdown-all-in-one", // Markdown support
+		// Web Development
+		"esbenp.prettier-vscode", // Prettier formatter (updated)
+		"dbaeumer.vscode-eslint", // Linting
+		"bradlc.vscode-tailwindcss", // Tailwind CSS
+		"dsznajder.es7-react-js-snippets", // React snippets
+		"ms-vscode.vscode-typescript-next", // TypeScript
+		"ms-playwright.playwright", // E2E testing
+		"formulahendry.auto-rename-tag", // HTML tag renaming
+		// Python Development
+		"ms-python.python", // Core Python
+		"ms-python.vscode-pylance", // Language server
+		"ms-python.black-formatter", // Formatting
+		"ms-python.isort", // Import sorting
+		"njpwerner.autodocstring", // Docstring generation
+		"kevinrose.vsc-python-indent", // Better indentation
+		"donjayamanne.python-test-explorer", // Testing
+		"charliermarsh.ruff",
+		"jmkrivocapich.drawfolderstructure"
+	]
+}
