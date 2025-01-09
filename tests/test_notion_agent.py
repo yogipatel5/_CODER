@@ -1,62 +1,128 @@
 """
-Tests for the Notion Agent implementation.
+Tests for Notion management commands.
 """
 
+import json
+from io import StringIO
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.core.management import call_command
 
-from notion.agent.v2 import NotionDependencies, get_response
-from notion.services import NotionService
-
-
-@pytest.fixture(autouse=True)
-def mock_logfire() -> Generator[MagicMock, None, None]:
-    """Mock Logfire configuration."""
-    with patch("logfire.configure") as mock:
-        yield mock
+from notion.management.commands.base import NotionAPI
 
 
 @pytest.fixture
-def mock_notion_service() -> MagicMock:
-    """Create a mock NotionService."""
-    service = MagicMock(spec=NotionService)
+def mock_notion_api() -> Generator[MagicMock, None, None]:
+    """Mock NotionAPI."""
+    with patch("notion.management.commands.base.NotionAPI") as mock:
+        api = MagicMock(spec=NotionAPI)
 
-    # Mock list_users
-    service.list_users.return_value = [{"id": "user1"}, {"id": "user2"}]
+        # Mock get_page
+        api.get_page.return_value = {
+            "id": "test-page-id",
+            "properties": {"title": {"title": [{"plain_text": "Test Page"}]}},
+            "parent": {"type": "page_id", "page_id": "parent-id"},
+            "url": "https://notion.so/test-page",
+        }
 
-    # Mock search_pages
-    service.search_pages.return_value = [{"id": "page1"}, {"id": "page2"}]
+        # Mock get_block_children
+        api.get_block_children.return_value = [
+            {"id": "block1", "type": "paragraph", "paragraph": {"rich_text": [{"plain_text": "Test content"}]}}
+        ]
 
-    # Mock create_page
-    service.create_page.return_value = {
-        "id": "new-page-id",
-        "url": "https://notion.so/new-page",
-    }
+        # Mock search_pages
+        api.search_pages.return_value = [
+            {"id": "page1", "properties": {"title": {"title": [{"plain_text": "Page 1"}]}}}
+        ]
 
-    return service
+        # Mock create_page
+        api.create_page.return_value = {"id": "new-page-id", "url": "https://notion.so/new-page"}
+
+        yield api
 
 
-def test_create_page(mock_notion_service: MagicMock) -> None:
-    """Test creating a new page through the agent."""
-    # Arrange
-    deps = NotionDependencies(service=mock_notion_service)
-    prompt = "Create a new page titled 'Test Page' with content 'This is a test.'"
+def test_get_page(mock_notion_api: MagicMock) -> None:
+    """Test get_page command."""
+    out = StringIO()
+    call_command("get_page", "test-page-id", stdout=out)
+    response = json.loads(out.getvalue())
 
-    # Act
-    result = get_response(prompt, deps)
-    print(f"\nAgent response: {result}")
+    # Verify response format
+    assert response["success"] is True
+    assert "message" in response
+    assert "data" in response
+    assert "page" in response["data"]
+    assert response["data"]["page"]["id"] == "test-page-id"
 
-    # Assert
-    assert result.success
-    assert result.message
-    assert not result.error
+    # Test with content
+    out = StringIO()
+    call_command("get_page", "test-page-id", "--include-content", stdout=out)
+    response = json.loads(out.getvalue())
+    assert "content" in response["data"]
+    assert len(response["data"]["content"]) > 0
 
-    # Verify service calls
-    assert mock_notion_service.create_page.call_count == 1
-    create_args = mock_notion_service.create_page.call_args.kwargs
-    assert "properties" in create_args
-    assert "title" in create_args["properties"]
-    title_content = create_args["properties"]["title"]["title"][0]["text"]["content"]
-    assert "Test Page" in title_content
+
+def test_list_pages(mock_notion_api: MagicMock) -> None:
+    """Test list_pages command."""
+    out = StringIO()
+    call_command("list_pages", stdout=out)
+    response = json.loads(out.getvalue())
+
+    assert response["success"] is True
+    assert "data" in response
+    assert "pages" in response["data"]
+    assert "total" in response["data"]
+    assert "limit" in response["data"]
+
+
+def test_update_page_json(mock_notion_api: MagicMock) -> None:
+    """Test update_page_json command."""
+    test_json = {"properties": {"title": "Updated Title"}}
+
+    out = StringIO()
+    call_command("update_page_json", "test-page-id", f"--json-string={json.dumps(test_json)}", stdout=out)
+    response = json.loads(out.getvalue())
+
+    assert response["success"] is True
+    assert "data" in response
+    assert "page_id" in response["data"]
+    assert "title" in response["data"]
+    assert "url" in response["data"]
+
+
+def test_manage_blocks(mock_notion_api: MagicMock) -> None:
+    """Test manage_blocks command."""
+    # Test create block
+    out = StringIO()
+    call_command("manage_blocks", "create", "test-page-id", "--type=paragraph", "--content=Test content", stdout=out)
+    response = json.loads(out.getvalue())
+
+    assert response["success"] is True
+    assert "data" in response
+    assert "block_id" in response["data"]
+
+    # Test update block
+    out = StringIO()
+    call_command("manage_blocks", "update", "block1", "--type=paragraph", "--content=Updated content", stdout=out)
+    response = json.loads(out.getvalue())
+
+    assert response["success"] is True
+    assert "data" in response
+    assert "block_id" in response["data"]
+
+
+def test_error_handling(mock_notion_api: MagicMock) -> None:
+    """Test error handling in commands."""
+    # Simulate API error
+    mock_notion_api.get_page.side_effect = Exception("API Error")
+
+    out = StringIO()
+    call_command("get_page", "invalid-id", stdout=out)
+    response = json.loads(out.getvalue())
+
+    assert response["success"] is False
+    assert "error" in response
+    assert "message" in response
+    assert "context" in response

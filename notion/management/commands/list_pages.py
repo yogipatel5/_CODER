@@ -1,5 +1,5 @@
 """
-Command to search Notion pages.
+Command to list Notion pages.
 """
 
 import json
@@ -9,15 +9,23 @@ from .base import NotionBaseCommand
 
 
 class Command(NotionBaseCommand):
-    help = "Search Notion pages by query"
+    help = "List all accessible Notion pages"
 
     def add_arguments(self, parser):
-        parser.add_argument("query", help="Search query")
+        parser.add_argument(
+            "--database",
+            help="Database ID to filter pages from a specific database",
+        )
         parser.add_argument(
             "--limit",
             type=int,
             default=100,
             help="Maximum number of pages to return (default: 100)",
+        )
+        parser.add_argument(
+            "--json",
+            action="store_true",
+            help="Output in JSON format (default)",
         )
 
     def format_page_data(self, page: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,30 +33,24 @@ class Command(NotionBaseCommand):
         title = self.get_title_from_page(page)
         parent = page.get("parent", {})
         parent_type = parent.get("type", "unknown")
-        parent_title = "Unknown"
 
         # Get the correct parent ID based on the parent type
         if parent_type == "workspace":
             parent_id = "workspace"
-            parent_title = "Workspace"
         elif parent_type == "page_id":
             parent_id = parent.get("page_id", "unknown")
-            try:
-                if parent_id:
-                    parent_page = self.api.get_page(parent_id)
-                    parent_title = self.get_title_from_page(parent_page)
-            except Exception:
-                pass
         elif parent_type == "database_id":
             parent_id = parent.get("database_id", "unknown")
-            parent_title = "Database"
         else:
             parent_id = "unknown"
 
         return {
             "id": page["id"],
             "title": title,
-            "parent": {"type": parent_type, "id": parent_id, "title": parent_title},
+            "parent": {
+                "type": parent_type,
+                "id": parent_id,
+            },
             "url": page.get("url"),
             "created_time": page.get("created_time"),
             "last_edited_time": page.get("last_edited_time"),
@@ -59,23 +61,31 @@ class Command(NotionBaseCommand):
             "success": False,
             "message": "",
             "context": "",
-            "data": {"pages": [], "total": 0, "limit": options["limit"], "query": options["query"]},
+            "data": {
+                "pages": [],
+                "total": 0,
+                "limit": options["limit"],
+            },
             "progress": [],
         }
 
         try:
-            # Search pages
-            pages = self.api.search_pages(options["query"])
+            # Using search with empty query to list all pages
+            pages = self.api.search_pages("")
 
             if not pages:
                 response.update(
                     {
                         "success": True,
-                        "message": "No pages found matching query",
+                        "message": "No pages found",
                     }
                 )
                 self.stdout.write(json.dumps(response, indent=2))
                 return
+
+            # Filter by database if specified
+            if options.get("database"):
+                pages = [page for page in pages if page.get("parent", {}).get("database_id") == options["database"]]
 
             # Apply limit
             pages = pages[: options["limit"]]
@@ -85,17 +95,16 @@ class Command(NotionBaseCommand):
             response.update(
                 {
                     "success": True,
-                    "message": f"Found {len(pages)} pages matching query",
+                    "message": f"Found {len(pages)} pages",
                     "data": {
                         "pages": formatted_pages,
                         "total": len(pages),
                         "limit": options["limit"],
-                        "query": options["query"],
                     },
                 }
             )
 
         except Exception as e:
-            response.update({"message": "Error searching pages", "error": str(e)})
+            response.update({"message": "Error listing pages", "error": str(e)})
 
         self.stdout.write(json.dumps(response, indent=2))
