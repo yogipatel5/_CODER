@@ -1,5 +1,10 @@
 """
 Tool for listing Notion pages with filtering support.
+
+TODO:
+- Add cursor-based pagination for large result sets
+- Implement sorting options
+- Consider caching for frequently accessed pages
 """
 
 from typing import Any, Dict, List, Optional

@@ -1,5 +1,10 @@
 """
 Tool for creating new Notion pages.
+
+TODO:
+- Add template support for common page structures
+- Implement batch creation method
+- Add duplicate detection mechanism
 """
 
 from typing import Any, Dict, List, Optional

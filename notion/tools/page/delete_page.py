@@ -1,5 +1,10 @@
 """
 Tool for deleting (archiving) Notion pages.
+
+TODO:
+- Add recursive deletion option for nested pages
+- Implement deletion confirmation
+- Consider soft-delete recovery period
 """
 
 from typing import Any, Dict

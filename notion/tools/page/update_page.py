@@ -1,5 +1,10 @@
 """
 Tool for updating existing Notion pages.
+
+TODO:
+- Implement optimistic locking for concurrent updates
+- Optimize partial updates
+- Add update history tracking
 """
 
 from typing import Any, Dict, Optional
