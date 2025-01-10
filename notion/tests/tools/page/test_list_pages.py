@@ -136,3 +136,81 @@ class TestListPagesTool:
         # This is a placeholder for async testing
         # In a real implementation, this would test async API calls
         pass
+
+    @pytest.mark.parametrize(
+        "cursor,direction,expected_args",
+        [
+            ("cursor1", "forward", {"start_cursor": "cursor1", "end_cursor": None}),
+            ("cursor2", "backward", {"start_cursor": None, "end_cursor": "cursor2"}),
+            (None, "forward", {"start_cursor": None, "end_cursor": None}),
+        ],
+    )
+    def test_list_pages_pagination(self, mocker, sample_page, cursor, direction, expected_args):
+        """Test pagination with different cursor scenarios."""
+        tool = ListPagesTool()
+        mock_response = {
+            "results": [sample_page],
+            "has_more": True,
+            "next_cursor": "next_cursor_value",
+        }
+        mock_search = mocker.patch.object(tool.api, "search_pages", return_value=mock_response)
+
+        result = tool._run(cursor=cursor, direction=direction)
+
+        assert result["success"] is True
+        assert result["data"]["pagination"]["has_more"] is True
+        assert result["data"]["pagination"]["next_cursor"] == "next_cursor_value"
+
+        # Verify search arguments
+        actual_args = {
+            "start_cursor": mock_search.call_args[1].get("start_cursor"),
+            "end_cursor": mock_search.call_args[1].get("end_cursor"),
+        }
+        assert actual_args == expected_args
+
+    def test_list_pages_pagination_metadata(self, mocker, sample_page):
+        """Test pagination metadata in response."""
+        tool = ListPagesTool()
+        mock_response = {
+            "results": [sample_page],
+            "has_more": True,
+            "next_cursor": "next_cursor",
+            "total_results": 50,
+        }
+        mocker.patch.object(tool.api, "search_pages", return_value=mock_response)
+
+        result = tool._run()
+        pagination = result["data"]["pagination"]
+
+        assert pagination["has_more"] is True
+        assert pagination["next_cursor"] == "next_cursor"
+        assert pagination["total_results"] == 50
+
+    def test_list_pages_pagination_empty(self, mocker):
+        """Test pagination with empty results."""
+        tool = ListPagesTool()
+        mock_response = {
+            "results": [],
+            "has_more": False,
+            "next_cursor": None,
+        }
+        mocker.patch.object(tool.api, "search_pages", return_value=mock_response)
+
+        result = tool._run(cursor="some_cursor")
+        pagination = result["data"]["pagination"]
+
+        assert pagination["has_more"] is False
+        assert pagination["next_cursor"] is None
+        assert len(result["data"]["pages"]) == 0
+
+    def test_list_pages_invalid_direction(self):
+        """Test invalid pagination direction."""
+        with pytest.raises(ValueError, match="Direction must be either 'forward' or 'backward'"):
+            ListPagesInput(direction="invalid")
+
+    @pytest.mark.integration
+    def test_list_pages_pagination_integration(self, mocker):
+        """Integration test for paginated listing."""
+        # This is a placeholder for actual integration testing
+        # In a real implementation, this would use actual API calls
+        pass

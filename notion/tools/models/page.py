@@ -266,3 +266,21 @@ class BlockContent(BaseModel):
     def create_batch(cls, blocks: List["BlockContent"]) -> List[Dict[str, Any]]:
         """Create multiple blocks in Notion format."""
         return [block.to_notion_format() for block in blocks]
+
+
+class PaginationMetadata(BaseModel):
+    """Pagination metadata for list responses."""
+
+    has_more: bool = Field(False, description="Whether there are more results available")
+    next_cursor: Optional[str] = Field(None, description="Cursor for the next page of results")
+    prev_cursor: Optional[str] = Field(None, description="Cursor for the previous page of results")
+    total_results: Optional[int] = Field(None, description="Total number of results if known")
+
+    @classmethod
+    def from_notion_response(cls, response: Dict[str, Any]) -> "PaginationMetadata":
+        """Create pagination metadata from Notion API response."""
+        return cls(
+            has_more=response.get("has_more", False),
+            next_cursor=response.get("next_cursor"),
+            total_results=response.get("total_results"),
+        )
