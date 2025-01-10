@@ -31,10 +31,10 @@
 - [x] Add error handling
 
 ### CreatePageTool (`tools/page/create_page.py`)
-- [ ] Create PageUpdateInput schema
-- [ ] Implement tool class
-- [ ] Handle parent types (workspace/page/database)
-- [ ] Add error handling
+- [x] Create PageUpdateInput schema
+- [x] Implement tool class
+- [x] Handle parent types (workspace/page/database)
+- [x] Add error handling
 
 ### UpdatePageTool (`tools/page/update_page.py`)
 - [ ] Create UpdatePageInput schema
