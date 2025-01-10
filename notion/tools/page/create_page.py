@@ -1,10 +1,20 @@
 """
 Tool for creating new Notion pages.
 
-TODO:
-- Add template support for common page structures
-- Implement batch creation method
-- Add duplicate detection mechanism
+TODO [NOTION-126] [P1]: Add template support for common page structures
+    - Define template schema
+    - Implement template loading
+    - Add template validation
+
+TODO [NOTION-127] [P2]: Implement batch creation method
+    - Support multiple page creation
+    - Add transaction handling
+    - Implement rollback on failure
+
+TODO [NOTION-128] [P3]: Add duplicate detection mechanism
+    - Implement title similarity check
+    - Add content hash comparison
+    - Configure duplicate thresholds
 """
 
 from typing import Any, Dict, List, Optional

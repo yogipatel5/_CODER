@@ -1,10 +1,20 @@
 """
 Tool for listing Notion pages with filtering support.
 
-TODO:
-- Add cursor-based pagination for large result sets
-- Implement sorting options
-- Consider caching for frequently accessed pages
+TODO [NOTION-123] [P1]: Add cursor-based pagination for large result sets
+    - Implement cursor token handling
+    - Add pagination metadata to response
+    - Support both forward and backward pagination
+
+TODO [NOTION-124] [P2]: Implement sorting options
+    - Add sort by creation date
+    - Add sort by last modified date
+    - Support custom property sorting
+
+TODO [NOTION-125] [P3]: Consider caching for frequently accessed pages
+    - Implement cache layer
+    - Add cache invalidation strategy
+    - Configure cache timeouts
 """
 
 from typing import Any, Dict, List, Optional

@@ -66,6 +66,50 @@ class TestListPagesTool:
         assert len(result["data"]["pages"]) == 1
         assert all(page.get("archived", False) for page in result["data"]["pages"])
 
+    @pytest.mark.parametrize("limit", [1, 100, 1000])
+    def test_list_pages_limit_boundaries(self, mocker, sample_page, limit):
+        """Test page limit boundaries."""
+        tool = ListPagesTool()
+        pages = [sample_page.copy() for _ in range(1000)]
+        mocker.patch.object(tool.api, "search_pages", return_value=pages)
+
+        result = tool._run(limit=limit)
+        assert result["success"] is True
+        assert len(result["data"]["pages"]) == limit
+
+    @pytest.mark.parametrize("invalid_limit", [-1, 0, 1001])
+    def test_list_pages_invalid_limits(self, invalid_limit):
+        """Test invalid page limits."""
+        with pytest.raises(ValueError):
+            ListPagesInput(limit=invalid_limit)
+
+    @pytest.mark.parametrize(
+        "database_id,expected_count",
+        [
+            ("test-database-id", 1),
+            ("non-existent-id", 0),
+            (None, 2),
+        ],
+    )
+    def test_list_pages_database_filter_scenarios(
+        self, mocker, sample_page, sample_database_page, database_id, expected_count
+    ):
+        """Test various database filter scenarios."""
+        tool = ListPagesTool()
+        pages = [sample_page, sample_database_page]
+        mocker.patch.object(tool.api, "search_pages", return_value=pages)
+
+        result = tool._run(database_id=database_id)
+        assert result["success"] is True
+        assert len(result["data"]["pages"]) == expected_count
+
+    @pytest.mark.integration
+    def test_list_pages_integration(self, mocker):
+        """Integration test for listing pages."""
+        # This is a placeholder for actual integration testing
+        # In a real implementation, this would use actual API calls
+        pass
+
     def test_list_pages_input_validation(self):
         """Test input validation."""
         with pytest.raises(ValueError):
@@ -85,3 +129,10 @@ class TestListPagesTool:
         result = tool._run()
         assert result["success"] is False
         assert result["error"] is not None
+
+    @pytest.mark.asyncio
+    async def test_list_pages_async(self, mocker):
+        """Test async operation support."""
+        # This is a placeholder for async testing
+        # In a real implementation, this would test async API calls
+        pass

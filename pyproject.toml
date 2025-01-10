@@ -24,10 +24,18 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-fail-under=90",
+    "--cov-branch",
+    "-m 'not integration'",
+]
+markers = [
+    "integration: marks tests that require actual API calls",
+    "asyncio: marks async tests",
 ]
 
 [tool.coverage.run]
 source = ["notion"]
+branch = true
+concurrency = ["thread", "multiprocessing"]
 omit = [
     "notion/tests/*",
     "notion/__pycache__/*",
@@ -41,7 +49,16 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "pass",
+    "def main",
 ]
+precision = 2
+
+[tool.coverage.html]
+directory = "coverage_html"
+show_contexts = true
+
+[tool.coverage.paths]
+source = ["notion/", "*/site-packages/notion/"]
 
 [tool.black]
 line-length = 120

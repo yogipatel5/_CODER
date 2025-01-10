@@ -1,10 +1,20 @@
 """
 Tool for updating existing Notion pages.
 
-TODO:
-- Implement optimistic locking for concurrent updates
-- Optimize partial updates
-- Add update history tracking
+TODO [NOTION-129] [P1]: Implement optimistic locking for concurrent updates
+    - Add version tracking
+    - Implement conflict detection
+    - Add retry mechanism
+
+TODO [NOTION-130] [P2]: Optimize partial updates
+    - Implement diff-based updates
+    - Add property-level change tracking
+    - Optimize API requests
+
+TODO [NOTION-131] [P3]: Add update history tracking
+    - Store update metadata
+    - Track property changes
+    - Implement audit logging
 """
 
 from typing import Any, Dict, Optional

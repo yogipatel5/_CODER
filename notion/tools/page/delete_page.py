@@ -1,10 +1,20 @@
 """
 Tool for deleting (archiving) Notion pages.
 
-TODO:
-- Add recursive deletion option for nested pages
-- Implement deletion confirmation
-- Consider soft-delete recovery period
+TODO [NOTION-132] [P1]: Add recursive deletion option for nested pages
+    - Implement page tree traversal
+    - Add progress tracking
+    - Support deletion cancellation
+
+TODO [NOTION-133] [P2]: Implement deletion confirmation
+    - Add confirmation workflow
+    - Support custom confirmation rules
+    - Implement approval tracking
+
+TODO [NOTION-134] [P3]: Consider soft-delete recovery period
+    - Implement recovery window
+    - Add restore functionality
+    - Track deletion metadata
 """
 
 from typing import Any, Dict
