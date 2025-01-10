@@ -1,18 +1,18 @@
 # Sprint 1: Foundation & Core Tools Checklist
 
 ## 1. Base Tool Implementation
-- [ ] Create NotionBaseTool class (`tools/base.py`)
-  - [ ] Implement API client integration from Django commands
-  - [ ] Add standardized response formatting
-  - [ ] Implement error handling patterns
-  - [ ] Add type hints and docstrings
+- [x] Create NotionBaseTool class (`tools/base.py`)
+  - [x] Implement API client integration from Django commands
+  - [x] Add standardized response formatting
+  - [x] Implement error handling patterns
+  - [x] Add type hints and docstrings
 
 ## 2. Shared Models (`tools/models/`)
-- [ ] Create base Pydantic models
-  - [ ] PageParent model
-  - [ ] PageProperties model
-  - [ ] PageResponse model
-  - [ ] BlockContent model
+- [x] Create base Pydantic models
+  - [x] PageParent model
+  - [x] PageProperties model
+  - [x] PageResponse model
+  - [x] BlockContent model
 
 ## Mid-Sprint Checkpoint
 - [ ] Review with Archie:
