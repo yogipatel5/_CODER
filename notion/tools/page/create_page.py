@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, validator
 
 from notion.tools.base import NotionBaseTool
 from notion.tools.models.page import BlockContent, PageParent, PageProperties, PageResponse, ParentType
+from notion.tools.models.template import PageTemplate
 
 
 class CreatePageInput(BaseModel):
@@ -33,6 +34,8 @@ class CreatePageInput(BaseModel):
     parent_type: ParentType = Field(..., description="Type of parent")
     properties: Optional[Dict[str, Any]] = Field(None, description="Additional page properties (for database pages)")
     content: Optional[List[BlockContent]] = Field(None, description="Page content blocks")
+    template: Optional[str] = Field(None, description="Template name to use")
+    template_variables: Optional[Dict[str, Any]] = Field(None, description="Variables for template rendering")
 
     @validator("title")
     def validate_title(cls, v: str) -> str:
@@ -53,6 +56,15 @@ class CreatePageInput(BaseModel):
 
         return v.strip()
 
+    @validator("template_variables")
+    def validate_template_variables(
+        cls, v: Optional[Dict[str, Any]], values: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Validate template variables are provided if template is specified."""
+        if values.get("template") and not v:
+            raise ValueError("Template variables are required when using a template")
+        return v
+
 
 class CreatePageTool(NotionBaseTool):
     """Tool for creating new Notion pages."""
@@ -61,6 +73,19 @@ class CreatePageTool(NotionBaseTool):
     description = "Create a new Notion page with specified parent and content"
     args_schema = CreatePageInput
 
+    def __init__(self):
+        """Initialize the tool with templates."""
+        super().__init__()
+        self.templates: Dict[str, PageTemplate] = {}
+
+    def register_template(self, template: PageTemplate) -> None:
+        """Register a page template.
+
+        Args:
+            template: Template to register
+        """
+        self.templates[template.name] = template
+
     def _run(
         self,
         title: str,
@@ -68,6 +93,8 @@ class CreatePageTool(NotionBaseTool):
         parent_type: ParentType,
         properties: Optional[Dict[str, Any]] = None,
         content: Optional[List[BlockContent]] = None,
+        template: Optional[str] = None,
+        template_variables: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Create a new Notion page.
 
@@ -77,11 +104,28 @@ class CreatePageTool(NotionBaseTool):
             parent_type: Type of parent
             properties: Additional page properties
             content: Page content blocks
+            template: Template name to use
+            template_variables: Variables for template rendering
 
         Returns:
             Dict containing success status and created page data
         """
         try:
+            # Handle template if specified
+            if template:
+                if template not in self.templates:
+                    raise ValueError(f"Template not found: {template}")
+
+                template_obj = self.templates[template]
+                if template_obj.parent_type != parent_type:
+                    raise ValueError(
+                        f"Template parent type {template_obj.parent_type} does not match requested type {parent_type}"
+                    )
+
+                rendered = template_obj.render(template_variables or {})
+                properties = rendered["properties"]
+                content = rendered.get("content")
+
             # Create base properties
             page_properties = PageProperties(title=title)
             if properties:
@@ -89,7 +133,10 @@ class CreatePageTool(NotionBaseTool):
 
             # Create page
             page = self.api.create_page(
-                parent_id=parent_id, title=title, properties=page_properties.to_notion_format(), parent_type=parent_type
+                parent_id=parent_id,
+                title=title,
+                properties=page_properties.to_notion_format(),
+                parent_type=parent_type,
             )
 
             # Add content blocks if provided
