@@ -4,7 +4,7 @@ Models for Notion page templates.
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from notion.tools.models.page import BlockContent, PageProperties, ParentType
 
@@ -17,8 +17,9 @@ class TemplateVariable(BaseModel):
     required: bool = Field(True, description="Whether the variable is required")
     default: Optional[Any] = Field(None, description="Default value if not provided")
 
-    @validator("name")
-    def validate_name(cls, v: str) -> str:
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str, info: ValidationInfo) -> str:
         """Validate variable name format."""
         if not v.strip():
             raise ValueError("Variable name cannot be empty")

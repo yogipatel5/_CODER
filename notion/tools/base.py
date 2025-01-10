@@ -1,80 +1,100 @@
-from typing import Any, Dict, Optional
+"""
+Base tool for Notion operations.
+"""
 
-from crewai.tools import BaseTool
+from typing import Any, ClassVar, Dict, Optional, Type
 
-from notion.management.commands.base import NotionAPI  # Reuse existing API client
+from pydantic import BaseModel, ValidationError
+
+from notion.tools.errors import NotionError
 
 
-class NotionBaseTool(BaseTool):
-    """Base class for all Notion tools"""
+class NotionBaseTool:
+    """Base class for Notion tools."""
 
-    def __init__(self):
-        super().__init__()
-        self.api = self._initialize_api()
+    name: ClassVar[str] = ""
+    description: ClassVar[str] = ""
+    args_schema: ClassVar[Type[BaseModel]] = BaseModel
 
-    def _initialize_api(self) -> NotionAPI:
-        """Initialize the Notion API client"""
+    def __init__(self, api: Optional[Any] = None):
+        """Initialize tool with optional API client."""
+        self.api = api or self._initialize_api()
+
+    def _initialize_api(self) -> Any:
+        """Initialize API client."""
         try:
-            return NotionAPI()  # This handles API key from environment
+            from notion.management.commands.base import NotionAPI
+
+            return NotionAPI()
         except Exception as e:
-            raise ValueError(f"Failed to initialize Notion API: {str(e)}")
+            raise NotionError(f"Failed to initialize API client: {e}")
+
+    def run(self, **kwargs: Any) -> Dict[str, Any]:
+        """Run the tool with the given arguments."""
+        try:
+            # Validate input arguments
+            args = self.args_schema(**kwargs)
+            return self._run(**args.model_dump())
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                return self._format_response(
+                    success=False,
+                    message="Validation error",
+                    error=str(e),
+                )
+            return self._handle_api_error(e, "run operation")
+
+    def _run(self, **kwargs: Any) -> Dict[str, Any]:
+        """Implement tool-specific logic."""
+        raise NotImplementedError
 
     def _format_response(
-        self, success: bool, data: Optional[Any] = None, message: str = "", error: Optional[str] = None
+        self,
+        success: bool,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Standardized response format for all tools
-
-        Args:
-            success: Whether the operation was successful
-            data: Optional data returned by the operation
-            message: Human-readable message about the operation
-            error: Error message if operation failed
-
-        Returns:
-            Dict with standardized response format
-        """
-        return {"success": success, "message": message, "data": data, "error": error}
+        """Format tool response."""
+        return {
+            "success": success,
+            "message": message,
+            "data": data,
+            "error": error,
+        }
 
     def _get_title_from_page(self, page: Dict[str, Any]) -> str:
-        """
-        Extract title from a Notion page
-
-        Args:
-            page: Notion page object
-
-        Returns:
-            Page title as string, "Untitled" if not found
-        """
+        """Extract title from page properties."""
         try:
-            title = page.get("properties", {}).get("title", {})
-            if not title:
-                return "Untitled"
-            return "".join(text.get("plain_text", "") for text in title.get("title", [])) or "Untitled"
-        except Exception:
-            return "Untitled"
+            properties = page.get("properties", {})
+            title_property = properties.get("title", {})
+            title_content = title_property.get("title", [])
+            if title_content and "plain_text" in title_content[0]:
+                return title_content[0]["plain_text"]
+        except (KeyError, IndexError, AttributeError):
+            pass
+        return "Untitled"
 
-    def _handle_api_error(self, e: Exception, operation: str) -> Dict[str, Any]:
-        """
-        Handle API errors in a consistent way
+    def _handle_api_error(self, error: Exception, action: str) -> Dict[str, Any]:
+        """Handle API errors."""
+        error_str = str(error).lower()
+        message = f"Failed to {action}"
 
-        Args:
-            e: Exception that occurred
-            operation: Description of the operation that failed
-
-        Returns:
-            Formatted error response
-        """
-        error_msg = str(e)
-        if "401" in error_msg:
-            message = "Authentication failed. Please check your API key."
-        elif "403" in error_msg:
-            message = "Permission denied. Please check your access rights."
-        elif "404" in error_msg:
-            message = "Resource not found. Please check the ID."
-        elif "429" in error_msg:
-            message = "Rate limit exceeded. Please try again later."
+        if "unauthorized" in error_str or "authentication" in error_str:
+            message += " due to authentication error"
+        elif "forbidden" in error_str or "permission" in error_str:
+            message += " due to insufficient permissions"
+        elif "not found" in error_str:
+            message += " - resource not found"
+        elif "rate limit" in error_str:
+            message += " due to rate limit"
+        elif "validation" in error_str:
+            message += " due to validation error"
         else:
-            message = f"Failed to {operation}"
+            message += f" due to error: {error}"
 
-        return self._format_response(success=False, error=error_msg, message=message)
+        return {
+            "success": False,
+            "message": message,
+            "error": str(error),
+        }

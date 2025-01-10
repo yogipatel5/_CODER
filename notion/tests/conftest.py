@@ -1,144 +1,147 @@
 """
-Pytest configuration and shared fixtures.
+Test configuration and fixtures.
 """
 
+import os
 from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
+from django.conf import settings
 
-from notion.tools.models.page import BlockContent, PageProperties, ParentType
+# Configure Django settings for tests
+if not settings.configured:
+    settings.configure(
+        DATABASES={
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": ":memory:",
+            }
+        },
+        INSTALLED_APPS=["notion"],
+        NOTION_API_KEY="test-token",
+        NOTION_API_BASE_URL="https://api.notion.com/v1",
+    )
 
 
 @pytest.fixture
 def mock_notion_api():
     """Mock Notion API client."""
-    mock = MagicMock()
-    mock.token = "test-token"
-    mock.base_url = "https://api.notion.com/v1"
-    return mock
+    mock_api = MagicMock()
 
-
-@pytest.fixture
-def sample_page() -> Dict[str, Any]:
-    """Sample Notion page data."""
-    return {
+    # Mock successful responses
+    mock_api.pages.create.return_value = {
         "id": "test-page-id",
-        "parent": {"type": "page_id", "page_id": "parent-page-id"},
-        "properties": {"title": {"title": [{"text": {"content": "Test Page"}}]}},
+        "object": "page",
+        "created_time": "2023-01-01T00:00:00.000Z",
+        "last_edited_time": "2023-01-01T00:00:00.000Z",
+        "archived": False,
         "url": "https://notion.so/test-page",
-        "created_time": "2024-01-01T00:00:00Z",
-        "last_edited_time": "2024-01-01T00:00:00Z",
-        "archived": False,
-    }
-
-
-@pytest.fixture
-def sample_database_page() -> Dict[str, Any]:
-    """Sample Notion database page data."""
-    return {
-        "id": "test-db-page-id",
-        "parent": {"type": "database_id", "database_id": "test-database-id"},
+        "parent": {"type": "page_id", "page_id": "parent-page-id"},
         "properties": {
-            "title": {"title": [{"text": {"content": "Test Database Page"}}]},
-            "number": {"type": "number", "number": 42},
-            "select": {"type": "select", "select": {"name": "Option 1"}},
+            "title": {
+                "id": "title",
+                "type": "title",
+                "title": [
+                    {
+                        "type": "text",
+                        "text": {"content": "Test Page", "link": None},
+                        "plain_text": "Test Page",
+                        "href": None,
+                    }
+                ],
+            }
         },
-        "url": "https://notion.so/test-db-page",
-        "created_time": "2024-01-01T00:00:00Z",
-        "last_edited_time": "2024-01-01T00:00:00Z",
-        "archived": False,
     }
 
+    mock_api.pages.update.return_value = mock_api.pages.create.return_value
+    mock_api.pages.delete.return_value = mock_api.pages.create.return_value
+    mock_api.pages.list.return_value = {
+        "object": "list",
+        "results": [mock_api.pages.create.return_value],
+        "next_cursor": None,
+        "has_more": False,
+    }
 
-@pytest.fixture
-def sample_block_content() -> List[BlockContent]:
-    """Sample block content data."""
-    return [
-        BlockContent(type="paragraph", text="Test paragraph"),
-        BlockContent(type="heading_1", text="Test heading"),
-        BlockContent(type="bulleted_list_item", text="Test list item"),
-    ]
-
-
-@pytest.fixture
-def sample_page_properties() -> PageProperties:
-    """Sample page properties data."""
-    return PageProperties(
-        title="Test Page",
-        rich_text=[{"text": {"content": "Test content"}}],
-        number=42,
-        select={"name": "Option 1"},
-        checkbox=True,
-        url="https://example.com",
-    )
+    return mock_api
 
 
 @pytest.fixture
 def error_responses() -> Dict[str, Dict[str, Any]]:
-    """Common API error responses."""
+    """Sample error responses from Notion API."""
     return {
-        "unauthorized": {
-            "status": 401,
-            "code": "unauthorized",
-            "message": "Invalid authentication credentials",
-        },
+        "unauthorized": {"object": "error", "status": 401, "code": "unauthorized", "message": "API token is invalid."},
         "forbidden": {
+            "object": "error",
             "status": 403,
-            "code": "restricted_resource",
-            "message": "User lacks access to the resource",
+            "code": "forbidden",
+            "message": "Integration does not have access to this resource.",
         },
-        "not_found": {
-            "status": 404,
-            "code": "object_not_found",
-            "message": "Resource does not exist",
-        },
+        "not_found": {"object": "error", "status": 404, "code": "not_found", "message": "Resource not found."},
         "rate_limited": {
+            "object": "error",
             "status": 429,
             "code": "rate_limited",
-            "message": "Rate limit exceeded. Retry after: 30 seconds",
+            "message": "Rate limit exceeded.",
             "retry_after": 30,
         },
         "validation_error": {
+            "object": "error",
             "status": 400,
             "code": "validation_error",
-            "message": "Invalid request data",
+            "message": "Invalid request body.",
         },
     }
 
 
 @pytest.fixture
-def mock_api_responses(sample_page, sample_database_page, error_responses):
-    """Collection of mock API responses."""
+def sample_page() -> Dict[str, Any]:
+    """Sample page data from Notion API."""
     return {
-        "get_page": {
-            "success": sample_page,
-            "database": sample_database_page,
-            "error": error_responses["not_found"],
-        },
-        "create_page": {
-            "success": sample_page,
-            "error": error_responses["validation_error"],
-        },
-        "update_page": {
-            "success": sample_page,
-            "error": error_responses["forbidden"],
-        },
-        "delete_page": {
-            "success": {"archived": True},
-            "error": error_responses["unauthorized"],
-        },
-        "search_pages": {
-            "success": {
-                "results": [sample_page, sample_database_page],
-                "has_more": True,
-                "next_cursor": "next_cursor_value",
+        "id": "test-page-id",
+        "object": "page",
+        "created_time": "2023-01-01T00:00:00.000Z",
+        "last_edited_time": "2023-01-01T00:00:00.000Z",
+        "archived": False,
+        "url": "https://notion.so/test-page",
+        "parent": {"type": "page_id", "page_id": "parent-page-id"},
+        "properties": {
+            "title": {
+                "id": "title",
+                "type": "title",
+                "title": [
+                    {
+                        "type": "text",
+                        "text": {"content": "Test Page", "link": None},
+                        "plain_text": "Test Page",
+                        "href": None,
+                    }
+                ],
             },
-            "empty": {
-                "results": [],
-                "has_more": False,
-                "next_cursor": None,
+            "Status": {"id": "status", "type": "select", "select": {"name": "In Progress", "color": "blue"}},
+            "Priority": {"id": "priority", "type": "number", "number": 1},
+            "Tags": {
+                "id": "tags",
+                "type": "multi_select",
+                "multi_select": [{"name": "Feature", "color": "red"}, {"name": "Bug", "color": "yellow"}],
             },
-            "error": error_responses["rate_limited"],
+            "Due Date": {"id": "due_date", "type": "date", "date": {"start": "2024-01-01", "end": None}},
+            "Complete": {"id": "complete", "type": "checkbox", "checkbox": False},
         },
+    }
+
+
+@pytest.fixture
+def sample_page_properties() -> Dict[str, Any]:
+    """Sample page properties for testing."""
+    return {
+        "title": "Test Page",
+        "number": 42,
+        "select": {"name": "Option 1"},
+        "multi_select": [{"name": "Tag 1"}, {"name": "Tag 2"}],
+        "date": {"start": "2024-01-01"},
+        "checkbox": True,
+        "url": "https://example.com",
+        "email": "test@example.com",
+        "phone": "+1234567890",
     }

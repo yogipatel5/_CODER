@@ -5,83 +5,67 @@ Tests for the UpdatePageTool.
 from typing import Any, Dict
 
 import pytest
+from pydantic import ValidationError
 
-from notion.tools.page.update_page import UpdatePageInput, UpdatePageTool
+from notion.tools.models.page import PageProperties, PageResponse
+from notion.tools.page.update_page import UpdatePageArgs, UpdatePageTool
 
 
 class TestUpdatePageTool:
     """Test suite for UpdatePageTool."""
 
-    def test_update_page_title(self, mocker, sample_page):
-        """Test updating page title."""
+    def test_update_page_success(self, mock_notion_api, sample_page: Dict[str, Any]):
+        """Test successful page update."""
         tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", return_value=sample_page)
-        mocker.patch.object(tool.api, "update_page", return_value=sample_page)
+        tool.api = mock_notion_api
+        mock_notion_api.pages.update.return_value = sample_page
 
-        result = tool._run(page_id="test-page-id", title="Updated Title")
-        assert result["success"] is True
-        assert "title" in tool.api.update_page.call_args[0][1]["properties"]
+        response = tool.run(
+            page_id="test-page",
+            properties=PageProperties(title="Updated Page"),
+        )
 
-    def test_update_page_properties(self, mocker, sample_database_page):
-        """Test updating page properties."""
+        assert response["success"] is True
+        assert response["data"] == PageResponse(**sample_page).model_dump()
+        assert "updated successfully" in response["message"].lower()
+
+    def test_update_page_invalid_properties(self):
+        """Test page update with invalid properties."""
         tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", return_value=sample_database_page)
-        mocker.patch.object(tool.api, "update_page", return_value=sample_database_page)
 
-        properties = {"number": 100, "select": {"name": "Option 2"}}
-        result = tool._run(page_id="test-db-page-id", properties=properties)
-        assert result["success"] is True
-        assert "properties" in tool.api.update_page.call_args[0][1]
+        with pytest.raises(ValidationError) as exc_info:
+            tool.run(page_id="test-page", properties={"invalid": "format"})
 
-    def test_update_page_archive_status(self, mocker, sample_page):
-        """Test updating page archive status."""
+        assert "validation error" in str(exc_info.value).lower()
+
+    @pytest.mark.parametrize(
+        "error_key,expected_message",
+        [
+            ("unauthorized", "authentication"),
+            ("forbidden", "permission"),
+            ("not_found", "not found"),
+            ("rate_limited", "rate limit"),
+            ("validation_error", "validation"),
+        ],
+    )
+    def test_update_page_error_handling(
+        self,
+        error_key: str,
+        expected_message: str,
+        error_responses: Dict[str, Dict[str, Any]],
+        mock_notion_api,
+    ):
+        """Test error handling during page update."""
         tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", return_value=sample_page)
-        mocker.patch.object(tool.api, "update_page", return_value=sample_page)
+        tool.api = mock_notion_api
+        error = Exception(str(error_responses[error_key]))
+        mock_notion_api.pages.update.side_effect = error
 
-        result = tool._run(page_id="test-page-id", archived=True)
-        assert result["success"] is True
-        assert tool.api.update_page.call_args[0][1]["archived"] is True
+        response = tool.run(
+            page_id="test-page",
+            properties=PageProperties(title="Updated Page"),
+        )
 
-    def test_update_page_multiple_fields(self, mocker, sample_database_page):
-        """Test updating multiple fields at once."""
-        tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", return_value=sample_database_page)
-        mocker.patch.object(tool.api, "update_page", return_value=sample_database_page)
-
-        result = tool._run(page_id="test-db-page-id", title="New Title", properties={"number": 200}, archived=True)
-        assert result["success"] is True
-        update_args = tool.api.update_page.call_args[0][1]
-        assert "properties" in update_args
-        assert "archived" in update_args
-
-    def test_update_page_input_validation(self):
-        """Test input validation."""
-        with pytest.raises(ValueError):
-            UpdatePageInput(page_id="")
-
-        with pytest.raises(ValueError):
-            UpdatePageInput(page_id="test", title="")
-
-        # Valid cases
-        assert UpdatePageInput(page_id="test")
-        assert UpdatePageInput(page_id="test", title="New Title")
-        assert UpdatePageInput(page_id="test", properties={"key": "value"})
-
-    def test_update_page_error_handling(self, mocker):
-        """Test error handling."""
-        tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", side_effect=Exception("API Error"))
-
-        result = tool._run(page_id="test-page-id")
-        assert result["success"] is False
-        assert result["error"] is not None
-
-    def test_update_page_not_found(self, mocker):
-        """Test handling of non-existent page."""
-        tool = UpdatePageTool()
-        mocker.patch.object(tool.api, "get_page", side_effect=Exception("404 Not Found"))
-
-        result = tool._run(page_id="non-existent-id")
-        assert result["success"] is False
-        assert "not found" in result["message"].lower()
+        assert response["success"] is False
+        assert expected_message in response["message"].lower()
+        assert response["error"] is not None

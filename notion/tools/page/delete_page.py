@@ -1,76 +1,66 @@
 """
-Tool for deleting (archiving) Notion pages.
-
-TODO [NOTION-132] [P1]: Add recursive deletion option for nested pages
-    - Implement page tree traversal
-    - Add progress tracking
-    - Support deletion cancellation
-
-TODO [NOTION-133] [P2]: Implement deletion confirmation
-    - Add confirmation workflow
-    - Support custom confirmation rules
-    - Implement approval tracking
-
-TODO [NOTION-134] [P3]: Consider soft-delete recovery period
-    - Implement recovery window
-    - Add restore functionality
-    - Track deletion metadata
+Tool for deleting Notion pages.
 """
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict, Type
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from notion.tools.base import NotionBaseTool
 from notion.tools.models.page import PageResponse
 
 
-class DeletePageInput(BaseModel):
-    """Input schema for delete_page tool."""
+class DeletePageArgs(BaseModel):
+    """Page deletion arguments."""
 
-    page_id: str = Field(..., description="ID of the page to delete")
-    permanent: bool = Field(False, description="Whether to permanently delete the page (archive by default)")
+    page_id: str = Field(..., description="Page ID to delete")
 
-    @validator("page_id")
+    @field_validator("page_id")
+    @classmethod
     def validate_page_id(cls, v: str) -> str:
         """Validate page ID."""
-        if not v.strip():
-            raise ValueError("Page ID cannot be empty")
-        return v.strip()
+        if not v or not isinstance(v, str):
+            raise ValueError("Page ID must be a non-empty string")
+        return v
 
 
 class DeletePageTool(NotionBaseTool):
-    """Tool for deleting Notion pages."""
+    """Tool for deleting pages."""
 
-    name = "delete_page"
-    description = "Delete (archive) a Notion page"
-    args_schema = DeletePageInput
+    name: ClassVar[str] = "delete_page"
+    description: ClassVar[str] = "Delete a page from Notion"
+    args_schema: ClassVar[Type[BaseModel]] = DeletePageArgs
 
-    def _run(self, page_id: str, permanent: bool = False) -> Dict[str, Any]:
-        """Delete a Notion page.
-
-        Args:
-            page_id: ID of the page to delete
-            permanent: Whether to permanently delete (archive by default)
-
-        Returns:
-            Dict containing success status and deleted page data
-        """
+    def run(self, page_id: str, **kwargs) -> Dict[str, Any]:
+        """Delete a page."""
         try:
-            # Get page first to include title in response
-            page = self.api.get_page(page_id)
-            response = PageResponse.from_notion_page(page)
+            # Validate arguments
+            args = DeletePageArgs(page_id=page_id)
 
-            if permanent:
-                # Permanent deletion (if supported by API)
-                self.api.delete_page(page_id)
-                message = f"Permanently deleted page: {response.title}"
-            else:
-                # Archive the page
-                self.api.update_page(page_id, {"archived": True})
-                message = f"Archived page: {response.title}"
+            response = self.api.pages.delete(page_id=args.page_id)
 
-            return self._format_response(success=True, data=response.dict(), message=message)
+            # Return success response even if we can't parse the response
+            if not isinstance(response, dict):
+                return {
+                    "success": True,
+                    "message": "Page deleted successfully",
+                    "data": {"id": str(response)},
+                }
+
+            try:
+                page_response = PageResponse(**response)
+                return {
+                    "success": True,
+                    "message": "Page deleted successfully",
+                    "data": page_response.model_dump(),
+                }
+            except Exception as parse_error:
+                return {
+                    "success": True,
+                    "message": "Page deleted successfully but couldn't parse response",
+                    "data": response,
+                    "error": str(parse_error),
+                }
 
         except Exception as e:
             return self._handle_api_error(e, "delete page")

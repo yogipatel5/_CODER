@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 import pytest
 
+from notion.tests.tools.utils.test_tools import TestNotionTool
 from notion.tools.base import NotionBaseTool
 
 
@@ -14,7 +15,7 @@ class TestNotionBaseTool:
 
     def test_initialize_api(self, mock_notion_api):
         """Test API client initialization."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         tool.api = mock_notion_api
 
         assert tool.api is not None
@@ -23,7 +24,7 @@ class TestNotionBaseTool:
 
     def test_format_response_success(self):
         """Test response formatting for success case."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         data = {"key": "value"}
         response = tool._format_response(success=True, data=data, message="Success message")
 
@@ -34,7 +35,7 @@ class TestNotionBaseTool:
 
     def test_format_response_error(self):
         """Test response formatting for error case."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         response = tool._format_response(success=False, error="Error occurred", message="Error message")
 
         assert response["success"] is False
@@ -44,13 +45,13 @@ class TestNotionBaseTool:
 
     def test_get_title_from_page(self, sample_page: Dict[str, Any]):
         """Test title extraction from page."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         title = tool._get_title_from_page(sample_page)
         assert title == "Test Page"
 
     def test_get_title_from_page_empty(self):
         """Test title extraction from page with no title."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         title = tool._get_title_from_page({})
         assert title == "Untitled"
 
@@ -66,7 +67,7 @@ class TestNotionBaseTool:
     )
     def test_handle_api_errors(self, error_key: str, expected_message: str, error_responses: Dict[str, Dict[str, Any]]):
         """Test API error handling for different error types."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         error = Exception(str(error_responses[error_key]))
         response = tool._handle_api_error(error, "test operation")
 
@@ -76,7 +77,7 @@ class TestNotionBaseTool:
 
     def test_handle_unknown_error(self):
         """Test handling of unknown error types."""
-        tool = NotionBaseTool()
+        tool = TestNotionTool()
         error = Exception("Unknown error")
         response = tool._handle_api_error(error, "test operation")
 

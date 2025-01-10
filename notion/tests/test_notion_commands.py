@@ -3,12 +3,15 @@ Tests for Notion management commands.
 Both unit tests with mocked responses and real-world integration tests.
 """
 
+import json
 import os
 from io import StringIO
 from unittest.mock import patch
 
 from django.core.management import call_command
 from django.test import TestCase
+
+from notion.management.commands.base import NotionAPI
 
 
 class NotionCommandsUnitTests(TestCase):
@@ -24,7 +27,11 @@ class NotionCommandsUnitTests(TestCase):
         self.mock_page = {
             "id": "test_page_id",
             "properties": {
-                "title": {"title": [{"text": {"content": "Test Page"}}]},
+                "title": {
+                    "id": "title",
+                    "type": "title",
+                    "title": [{"type": "text", "text": {"content": "Test Page"}, "plain_text": "Test Page"}],
+                },
                 "Status": {"select": {"name": "In Progress"}},
             },
         }
@@ -33,13 +40,17 @@ class NotionCommandsUnitTests(TestCase):
     def test_list_databases(self, mock_list):
         mock_list.return_value = [self.mock_database]
         call_command("notion", "list_databases", stdout=self.stdout)
-        self.assertIn("Test Database", self.stdout.getvalue())
+        response = json.loads(self.stdout.getvalue())
+        assert response["success"] is True
+        assert response["data"]["databases"][0]["title"] == "Test Database"
 
     @patch("notion.management.commands.base.NotionAPI.get_page")
     def test_get_page(self, mock_get):
         mock_get.return_value = self.mock_page
         call_command("notion", "get_page", "test_page_id", stdout=self.stdout)
-        self.assertIn("Test Page", self.stdout.getvalue())
+        response = json.loads(self.stdout.getvalue())
+        assert response["success"] is True
+        assert response["data"]["page"]["title"] == "Test Page"
 
 
 class NotionCommandsIntegrationTests(TestCase):
@@ -65,10 +76,9 @@ class NotionCommandsIntegrationTests(TestCase):
     def test_01_list_databases(self):
         """List available databases and verify output format."""
         call_command("notion", "list_databases", stdout=self.stdout)
-        output = self.stdout.getvalue()
-        # Verify output format and save a database_id for later tests
-        self.assertIn("Found", output)
-        # TODO: Save a database_id for subsequent tests
+        response = json.loads(self.stdout.getvalue())
+        assert response["success"] is True
+        assert response["message"] == "Found 1 databases"
 
     def test_02_create_test_page(self):
         """Create a test page in the selected database."""
@@ -77,13 +87,15 @@ class NotionCommandsIntegrationTests(TestCase):
             "notion",
             "create_page",
             database_id,
-            "--title",
             "Integration Test Page",
+            "--parent-type",
+            "database_id",
             "--properties",
             "Status=Testing",
             stdout=self.stdout,
         )
-        output = self.stdout.getvalue()
+        response = json.loads(self.stdout.getvalue())
+        assert response["success"] is True
         # Extract and save the created page ID for later tests
         # self.created_pages.append(page_id)
 

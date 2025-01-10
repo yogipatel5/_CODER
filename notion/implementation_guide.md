@@ -7,6 +7,23 @@
 - Focus: Direct conversion of Django commands to CrewAI tools
 - Goal: Enable AI agents to interact with Notion via these tools
 
+## Tool Architecture Fundamentals
+
+1. Base Tool Structure
+   - Abstract base class requirements
+   - CrewAI tool integration patterns
+   - Standard method implementations
+
+2. Tool Inheritance Patterns
+   - Required field annotations
+   - Abstract method contracts
+   - Response formatting standards
+
+3. Validation Strategy
+   - Input schema validation
+   - Error handling patterns
+   - API response processing
+
 ## Architecture Diagrams
 
 ### 1. Class Relationships

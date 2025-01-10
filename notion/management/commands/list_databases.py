@@ -18,14 +18,15 @@ class Command(NotionBaseCommand):
         if "title" in database:
             title_parts = []
             for text in database["title"]:
-                if "plain_text" in text:
-                    title_parts.append(text["plain_text"])
+                if "text" in text and "content" in text["text"]:
+                    title_parts.append(text["text"]["content"])
             if title_parts:
                 title = "".join(title_parts)
 
         parent = database.get("parent", {})
         parent_type = parent.get("type", "unknown")
         parent_title = "Unknown"
+        parent_id = "unknown"
 
         # Get the correct parent ID and title
         if parent_type == "workspace":
