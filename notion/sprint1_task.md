@@ -37,10 +37,10 @@
 - [x] Add error handling
 
 ### UpdatePageTool (`tools/page/update_page.py`)
-- [ ] Create UpdatePageInput schema
-- [ ] Implement tool class
-- [ ] Support property updates
-- [ ] Add error handling
+- [x] Create UpdatePageInput schema
+- [x] Implement tool class
+- [x] Support property updates
+- [x] Add error handling
 
 ### DeletePageTool (`tools/page/delete_page.py`)
 - [ ] Create DeletePageInput schema
