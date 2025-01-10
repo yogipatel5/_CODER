@@ -12,12 +12,14 @@ from notion.tools.base import NotionBaseTool
 class TestNotionBaseTool:
     """Test suite for NotionBaseTool."""
 
-    def test_initialize_api(self):
+    def test_initialize_api(self, mock_notion_api):
         """Test API client initialization."""
         tool = NotionBaseTool()
+        tool.api = mock_notion_api
+
         assert tool.api is not None
-        assert hasattr(tool.api, "token")
-        assert hasattr(tool.api, "base_url")
+        assert tool.api.token == "test-token"
+        assert tool.api.base_url == "https://api.notion.com/v1"
 
     def test_format_response_success(self):
         """Test response formatting for success case."""
@@ -52,38 +54,32 @@ class TestNotionBaseTool:
         title = tool._get_title_from_page({})
         assert title == "Untitled"
 
-    def test_handle_api_error_401(self):
-        """Test API error handling for 401."""
+    @pytest.mark.parametrize(
+        "error_key,expected_message",
+        [
+            ("unauthorized", "authentication"),
+            ("forbidden", "permission"),
+            ("not_found", "not found"),
+            ("rate_limited", "rate limit"),
+            ("validation_error", "validation"),
+        ],
+    )
+    def test_handle_api_errors(self, error_key: str, expected_message: str, error_responses: Dict[str, Dict[str, Any]]):
+        """Test API error handling for different error types."""
         tool = NotionBaseTool()
-        error = Exception("401 Unauthorized")
+        error = Exception(str(error_responses[error_key]))
         response = tool._handle_api_error(error, "test operation")
 
         assert response["success"] is False
-        assert "authentication" in response["message"].lower()
+        assert expected_message in response["message"].lower()
+        assert response["error"] is not None
 
-    def test_handle_api_error_403(self):
-        """Test API error handling for 403."""
+    def test_handle_unknown_error(self):
+        """Test handling of unknown error types."""
         tool = NotionBaseTool()
-        error = Exception("403 Forbidden")
+        error = Exception("Unknown error")
         response = tool._handle_api_error(error, "test operation")
 
         assert response["success"] is False
-        assert "permission" in response["message"].lower()
-
-    def test_handle_api_error_404(self):
-        """Test API error handling for 404."""
-        tool = NotionBaseTool()
-        error = Exception("404 Not Found")
-        response = tool._handle_api_error(error, "test operation")
-
-        assert response["success"] is False
-        assert "not found" in response["message"].lower()
-
-    def test_handle_api_error_429(self):
-        """Test API error handling for 429."""
-        tool = NotionBaseTool()
-        error = Exception("429 Too Many Requests")
-        response = tool._handle_api_error(error, "test operation")
-
-        assert response["success"] is False
-        assert "rate limit" in response["message"].lower()
+        assert "failed" in response["message"].lower()
+        assert response["error"] == "Unknown error"
