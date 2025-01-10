@@ -43,9 +43,9 @@
 - [x] Add error handling
 
 ### DeletePageTool (`tools/page/delete_page.py`)
-- [ ] Create DeletePageInput schema
-- [ ] Implement tool class
-- [ ] Add error handling
+- [x] Create DeletePageInput schema
+- [x] Implement tool class
+- [x] Add error handling
 
 ## 4. Testing Infrastructure
 - [ ] Set up pytest configuration
