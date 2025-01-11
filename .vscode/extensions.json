@@ -16,7 +16,6 @@
 		"formulahendry.auto-rename-tag", // HTML tag renaming
 		// Python Development
 		"ms-python.python", // Core Python
-		"ms-python.vscode-pylance", // Language server
 		"ms-python.black-formatter", // Formatting
 		"ms-python.isort", // Import sorting
 		"njpwerner.autodocstring", // Docstring generation

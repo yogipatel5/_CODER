@@ -4,20 +4,6 @@ A collection of tools for developing on my Macbook Studio and Macbook Pro, built
 
 ## Project Structure
 
-```text
-_CODER/
-├── automation/               # Automation tools and scripts
-├── core/                    # Django project core settings
-├── github_management/       # GitHub management tools
-├── project_management/      # Project management tools
-├── proxmox_management/      # Proxmox management tools
-├── system_management/       # System management tools
-├── vault_management/        # Vault management tools
-├── manage.py               # Django management script
-├── requirements.txt        # Python dependencies
-└── .env                    # Environment variables (not in git)
-```
-
 ## Setup
 
 1. Clone the repository:

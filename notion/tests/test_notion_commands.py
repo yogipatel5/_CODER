@@ -3,6 +3,7 @@ Tests for Notion management commands.
 Both unit tests with mocked responses and real-world integration tests.
 """
 
+import json
 import os
 from io import StringIO
 from unittest.mock import patch
@@ -19,27 +20,40 @@ class NotionCommandsUnitTests(TestCase):
         self.stderr = StringIO()
 
         # Mock response data
-        self.mock_database = {"id": "test_db_id", "title": [{"text": {"content": "Test Database"}}]}
+        self.mock_database = {
+            "id": "test_db_id",
+            "title": [{"plain_text": "Test Database"}],
+            "parent": {"type": "workspace"},
+            "properties": {},
+        }
 
         self.mock_page = {
             "id": "test_page_id",
             "properties": {
-                "title": {"title": [{"text": {"content": "Test Page"}}]},
+                "title": {"title": [{"text": {"content": "Test Page"}, "plain_text": "Test Page"}]},
                 "Status": {"select": {"name": "In Progress"}},
             },
+            "parent": {"type": "workspace"},
+            "url": "https://notion.so/test-page",
         }
 
     @patch("notion.management.commands.base.NotionAPI.list_databases")
     def test_list_databases(self, mock_list):
         mock_list.return_value = [self.mock_database]
         call_command("notion", "list_databases", stdout=self.stdout)
-        self.assertIn("Test Database", self.stdout.getvalue())
+        output = json.loads(self.stdout.getvalue())
+        self.assertTrue(output["success"])
+        self.assertEqual(len(output["data"]["databases"]), 1)
+        self.assertEqual(output["data"]["databases"][0]["title"], "Test Database")
 
     @patch("notion.management.commands.base.NotionAPI.get_page")
     def test_get_page(self, mock_get):
         mock_get.return_value = self.mock_page
         call_command("notion", "get_page", "test_page_id", stdout=self.stdout)
-        self.assertIn("Test Page", self.stdout.getvalue())
+        output = json.loads(self.stdout.getvalue())
+        self.assertTrue(output["success"])
+        self.assertEqual(output["data"]["page"]["id"], "test_page_id")
+        self.assertEqual(output["data"]["page"]["title"], "Test Page")
 
 
 class NotionCommandsIntegrationTests(TestCase):
@@ -65,27 +79,33 @@ class NotionCommandsIntegrationTests(TestCase):
     def test_01_list_databases(self):
         """List available databases and verify output format."""
         call_command("notion", "list_databases", stdout=self.stdout)
-        output = self.stdout.getvalue()
-        # Verify output format and save a database_id for later tests
-        self.assertIn("Found", output)
-        # TODO: Save a database_id for subsequent tests
+        output = json.loads(self.stdout.getvalue())
+        self.assertTrue(output["success"])
+        self.assertIn("Found", output["message"])
+        # Save database_id for subsequent tests if needed
+        if output["data"]["databases"]:
+            self.database_id = output["data"]["databases"][0]["id"]
 
     def test_02_create_test_page(self):
         """Create a test page in the selected database."""
-        database_id = "YOUR_TEST_DATABASE_ID"  # We'll get this from manual testing first
+        if not hasattr(self, "database_id"):
+            self.skipTest("No database available for testing")
+        
         call_command(
             "notion",
             "create_page",
-            database_id,
-            "--title",
+            self.database_id,
             "Integration Test Page",
+            "--parent-type",
+            "database_id",
             "--properties",
             "Status=Testing",
             stdout=self.stdout,
         )
-        output = self.stdout.getvalue()
-        # Extract and save the created page ID for later tests
-        # self.created_pages.append(page_id)
+        output = json.loads(self.stdout.getvalue())
+        self.assertTrue(output["success"])
+        # Save the created page ID for later tests
+        self.created_pages.append(output["data"]["page"]["id"])
 
     def test_03_get_page_details(self):
         """Verify the created page exists with correct properties."""

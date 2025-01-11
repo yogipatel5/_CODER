@@ -58,4 +58,6 @@ class Command(BaseCommand):
 
         # Create and run the appropriate command
         command = self.commands[command_name]()
+        command.stdout = self.stdout  # Pass stdout to subcommand
+        command.stderr = self.stderr  # Pass stderr to subcommand
         return command.handle(*args, **options)
