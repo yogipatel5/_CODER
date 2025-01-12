@@ -8,7 +8,8 @@ from typing import Dict, Type
 
 from django.core.management.base import BaseCommand, CommandError
 
-from .base import NotionBaseCommand
+from .base import NOTION_TOOLS
+from .base_command import NotionBaseCommand
 
 
 class Command(BaseCommand):
@@ -22,18 +23,35 @@ class Command(BaseCommand):
     def _load_commands(self):
         """Dynamically load all available commands."""
         current_dir = Path(__file__).parent
+
+        # Load commands from main directory
         for file in current_dir.glob("*.py"):
             if file.stem in ["__init__", "notion", "base"]:
                 continue
+            self._try_load_command(file)
 
-            try:
-                module = importlib.import_module(f"notion.management.commands.{file.stem}")
-                if hasattr(module, "Command"):
-                    command_class = getattr(module, "Command")
-                    if issubclass(command_class, NotionBaseCommand):
-                        self.commands[file.stem] = command_class
-            except ImportError as e:
-                self.stderr.write(f"Failed to load command {file.stem}: {e}")
+        # Load commands from run directory
+        run_dir = current_dir / "run"
+        if run_dir.exists():
+            for file in run_dir.glob("*.py"):
+                if file.stem != "__init__":
+                    self._try_load_command(file, "run")
+
+    def _try_load_command(self, file: Path, subdir: str = ""):
+        """Try to load a command from a file."""
+        try:
+            module_path = f"notion.management.commands"
+            if subdir:
+                module_path += f".{subdir}"
+            module_path += f".{file.stem}"
+
+            module = importlib.import_module(module_path)
+            if hasattr(module, "Command"):
+                command_class = getattr(module, "Command")
+                if issubclass(command_class, NotionBaseCommand):
+                    self.commands[file.stem] = command_class
+        except ImportError as e:
+            self.stderr.write(f"Failed to load command {file.stem}: {e}")
 
     def create_parser(self, prog_name, subcommand, **kwargs):
         parser = super().create_parser(prog_name, subcommand, **kwargs)

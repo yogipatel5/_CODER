@@ -1,17 +1,25 @@
-research_task:
+list_pages_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is 2024.
+    List all pages in the Notion workspace, providing detailed information about each page
+    including titles, IDs, parent relationships, and timestamps.
   expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    A formatted list of all pages with their metadata, organized in a clear and readable way.
+  agent: notion_manager
 
-reporting_task:
+research_pages_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Research and analyze the content of Notion pages to find relevant information
+    about {topic}. Consider page relationships, content patterns, and recent updates.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: administrator
+    A comprehensive analysis of the pages related to {topic}, including key findings,
+    patterns, and recommendations.
+  agent: notion_researcher
+
+edit_page_task:
+  description: >
+    Create or edit a Notion page about {topic}, ensuring proper structure,
+    formatting, and organization. Include relevant links and relationships to other pages.
+  expected_output: >
+    A well-structured and properly formatted Notion page about {topic}, with clear
+    sections, appropriate formatting, and relevant connections to other content.
+  agent: notion_editor

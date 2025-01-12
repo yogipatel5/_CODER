@@ -1,0 +1,3 @@
+"""
+Notion app package.
+"""

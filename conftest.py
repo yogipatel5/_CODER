@@ -1,23 +1,10 @@
 """
-Configure pytest for Django testing.
+Configure test environment.
 """
 
 import os
+import sys
 
-import django
-import pytest
-
-
-def pytest_configure():
-    """Configure Django for testing."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-    django.setup()
-
-
-@pytest.fixture(autouse=True)
-def enable_db_access_for_all_tests(db):
-    """
-    Enable database access for all tests.
-    This is equivalent to using the pytest.mark.django_db decorator on all test functions.
-    """
-    pass  # pragma: no cover
+# Add project root to Python path
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)

@@ -1,54 +1,36 @@
-from crewai import Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
+"""Notion crew configuration and setup."""
 
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
+from pathlib import Path
+
+import yaml
+from crewai import Agent, Crew, Task
+
+from notion.tools import NOTION_TOOLS
 
 
-@CrewBase
-class NotionCrew:
-    """Notion crew"""
+def get_notion_agent(agent_type: str = "notion_manager", verbose: bool = False) -> Agent:
+    """Get a configured Notion agent.
 
-    # Learn more about YAML configuration files here:
-    # Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-    # Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
-    agents_config = "config/agents.yaml"
-    tasks_config = "config/tasks.yaml"
+    Args:
+        agent_type: Type of agent to create (default: notion_manager)
+        verbose: Whether to enable verbose output (default: False)
 
-    # If you would like to add tools to your agents, you can learn more about it here:
-    # https://docs.crewai.com/concepts/agents#agent-tools
-    @agent
-    def researcher(self) -> Agent:
-        return Agent(config=self.agents_config["researcher"], verbose=True)
+    Returns:
+        Agent: Configured Notion agent
+    """
+    config_dir = Path(__file__).parent / "config"
 
-    @agent
-    def reporting_analyst(self) -> Agent:
-        return Agent(config=self.agents_config["reporting_analyst"], verbose=True)
+    # Load agent config
+    with open(config_dir / "agents.yaml", encoding="utf-8") as f:
+        agents_config = yaml.safe_load(f)
 
-    # To learn more about structured task outputs,
-    # task dependencies, and task callbacks, check out the documentation:
-    # https://docs.crewai.com/concepts/tasks#overview-of-a-task
-    @task
-    def research_task(self) -> Task:
-        return Task(
-            config=self.tasks_config["research_task"],
-        )
+    agent_config = agents_config[agent_type]
 
-    @task
-    def reporting_task(self) -> Task:
-        return Task(config=self.tasks_config["reporting_task"], output_file="report.md")
-
-    @crew
-    def crew(self) -> Crew:
-        """Creates the LatestAiDevelopment crew"""
-        # To learn how to add knowledge sources to your crew, check out the documentation:
-        # https://docs.crewai.com/concepts/knowledge#what-is-knowledge
-
-        return Crew(
-            agents=self.agents,  # Automatically created by the @agent decorator
-            tasks=self.tasks,  # Automatically created by the @task decorator
-            process=Process.sequential,
-            verbose=True,
-            # process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
-        )
+    return Agent(
+        role=agent_config["role"],
+        goal=agent_config["goal"],
+        backstory=agent_config["backstory"],
+        verbose=verbose,
+        allow_delegation=agent_config.get("allow_delegation", False),
+        tools=NOTION_TOOLS,
+    )

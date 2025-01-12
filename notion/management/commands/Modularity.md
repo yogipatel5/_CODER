@@ -6,14 +6,15 @@ import logging
 
 from notion.management.commands.run.create_page import Command as CreatePageCommand
 from notion.management.commands.run.list_pages import Command as ListPagesCommand
+from notion.management.commands.base_command import NotionBaseCommand
 
-from .base_command import REGISTERED_NOTION_TOOLS
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(**name**)
 
 # Instantiate commands to trigger tool registration
+
 CreatePageCommand()
 ListPagesCommand()
 
 # Access the registered tools from the base command
-NOTION_TOOLS = REGISTERED_NOTION_TOOLS
+
+NOTION_TOOLS = NotionBaseCommand.registered_tools

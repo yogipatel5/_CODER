@@ -1,49 +1,58 @@
 {
-  "files.exclude": {
-    "**/.git": true,
-    "**/.svn": true,
-    "**/.hg": true,
-    "**/CVS": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true,
-    "**/.trunk/*actions/": true,
-    "**/.trunk/*logs/": true,
-    "**/.trunk/*notifications/": true,
-    "**/.trunk/*out/": true,
-    "**/.trunk/*plugins/": true,
-    "**/__pycache__": true,
-    "**/*.pyc": true,
-    "**/.pytest_cache": true,
-    "**/.coverage": true,
-    "**/.mypy_cache": true,
-    "**/.ipynb_checkpoints": true,
-    "/backups": true,
-    "backups": true,
-    ".mypy_cache": true,
-    ".pytest_cache": true,
-    ".ruff_cache": true,
-    "test_project.yaml": true
-  },
+  "editor.fontSize": 14,
+  "editor.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
+  "editor.tabSize": 2,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": false,
   "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
-    "source.organizeImports": "explicit"
-  },
+  "editor.formatOnPaste": true,
+  "editor.rulers": [80, 100],
+  "editor.suggestSelection": "first",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "workbench.colorTheme": "One Dark Pro",
+  "workbench.iconTheme": "material-icon-theme",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.gpuAcceleration": "auto",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
-    "editor.formatOnType": false,
-    "editor.rulers": [
-      120
-    ],
     "editor.codeActionsOnSave": {
-      "source.fixAll": "explicit",
       "source.organizeImports": "explicit"
     }
   },
+  "extensions.ignoreRecommendations": false,
+  "extensions.autoUpdate": true,
+  "python.disableInstallationCheck": true,
+  "security.workspace.trust.enabled": true,
+  "security.workspace.trust.startupPrompt": "always",
+  "security.workspace.trust.emptyWindow": false,
+  "extensions.supportUntrustedWorkspaces": {
+    "ms-python.python": {
+      "supported": "limited"
+    },
+    "ms-python.vscode-pylance": {
+      "supported": "limited"
+    }
+  },
   "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
-  "python.testing.pytestEnabled": true,
-  "terminal.integrated.env.osx": {
-    "PYTHONPATH": "${workspaceFolder}"
-  }
+  "python.pythonPath": "${workspaceFolder}/",
+  "python.analysis.extraPaths": ["${workspaceFolder}"],
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.indexing": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "accessibility.signals.terminalBell": {
+    "sound": "off"
+  },
+  "terminal.integrated.enableVisualBell": false
 }

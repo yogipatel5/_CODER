@@ -4,11 +4,11 @@ Tests for Notion management commands.
 
 from django.test import TestCase
 
-from notion.management.commands.base_command import REGISTERED_NOTION_TOOLS
-from notion.management.commands.run.create_page import Command as CreatePageCommand
-from notion.management.commands.run.create_page import CreatePageNotionTool
-from notion.management.commands.run.list_pages import Command as ListPagesCommand
-from notion.management.commands.run.list_pages import ListPagesNotionTool
+from .base_command import REGISTERED_NOTION_TOOLS
+from .run.create_page import Command as CreatePageCommand
+from .run.create_page import CreatePageNotionTool
+from .run.list_pages import Command as ListPagesCommand
+from .run.list_pages import ListPagesNotionTool
 
 
 class TestNotionCommands(TestCase):
