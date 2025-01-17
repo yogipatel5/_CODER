@@ -4,6 +4,7 @@ Project management services for creating project structure and handling template
 
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 from core.services import ConfigurationError
@@ -41,8 +42,7 @@ def create_project_structure(config: Dict[str, Any]) -> str:
                 # Create empty file if it doesn't exist
                 if not os.path.exists(file_path):
                     logger.info(f"Creating file: {file_path}")
-                    with open(file_path, "w") as f:
-                        pass
+                    Path(file_path).touch()
                 else:
                     logger.info(f"File already exists: {file_path}")
 

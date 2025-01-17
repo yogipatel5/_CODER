@@ -2,7 +2,7 @@
 import sys
 import warnings
 
-from notion.crew import LatestAiDevelopment
+from notion.test_crew.src.test_crew.crew import TestCrew
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -17,7 +17,7 @@ def run():
     Run the crew.
     """
     inputs = {"topic": "AI LLMs"}
-    LatestAiDevelopment().crew().kickoff(inputs=inputs)
+    TestCrew().crew().kickoff(inputs=inputs)
 
 
 def train():
@@ -26,7 +26,9 @@ def train():
     """
     inputs = {"topic": "AI LLMs"}
     try:
-        LatestAiDevelopment().crew().train(n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs)
+        TestCrew().crew().train(
+            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
+        )
 
     except Exception as e:
         raise Exception(f"An error occurred while training the crew: {e}")
@@ -37,7 +39,7 @@ def replay():
     Replay the crew execution from a specific task.
     """
     try:
-        LatestAiDevelopment().crew().replay(task_id=sys.argv[1])
+        TestCrew().crew().replay(task_id=sys.argv[1])
 
     except Exception as e:
         raise Exception(f"An error occurred while replaying the crew: {e}")
@@ -49,7 +51,9 @@ def test():
     """
     inputs = {"topic": "AI LLMs"}
     try:
-        LatestAiDevelopment().crew().test(n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs)
+        TestCrew().crew().test(
+            n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs
+        )
 
     except Exception as e:
         raise Exception(f"An error occurred while replaying the crew: {e}")

@@ -1,10 +1,12 @@
 # Sprint 1 (2023-10-01 - 2023-10-14)
 
 ## Objectives
+
 - Create a Django boilerplate project
 - Implement a simple user model
 
 ## Tasks
+
 - [ ] Set up Django project
   - Description: Initialize a new Django project with necessary configurations
   - Priority: High
@@ -27,8 +29,10 @@
   - Status: Not Started
 
 ## Progress
+
 - Sprint started on 2023-10-01
 - Current status: In Progress
 
 ## Review
+
 To be completed at sprint end

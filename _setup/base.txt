@@ -1,0 +1,8 @@
+# Core dependencies needed for the application to run
+Django>=5.1.5
+django-redis==5.4.0
+django-stubs==5.1.1
+django-stubs-ext==5.1.1
+python-dotenv==1.0.1
+pydantic>=2.4.0
+redis==5.0.1 

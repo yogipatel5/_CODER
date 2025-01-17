@@ -1,17 +1,9 @@
-django==5.1.4
-psycopg2-binary==2.9.9
-python-dotenv==1.0.0
-django-redis==5.4.0
-GitPython>=3.1.40
-pytest==8.3.4
-pytest-django==4.9.0
-pluggy==1.5.0
-iniconfig==2.0.0
-psutil>=4.0.0  # Required for mypy dmypy
-black==24.1.1
-PyYAML==6.0.1
-ruff==0.3.0
-isort==5.13.2
-pydantic
-crewai
-crewai[tools]
+-r _setup/prod.txt
+
+# Development dependencies (only needed for local development)
+-r _setup/dev.txt
+
+# Pin specific versions for security
+langchain==0.3.1  # Fix multiple security vulnerabilities
+GitPython==3.1.41  # Fix CVE-2023-40590
+black==24.3.0  # Fix ReDoS vulnerability

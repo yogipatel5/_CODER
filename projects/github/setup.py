@@ -2,20 +2,61 @@
 
 import json
 import os
-import subprocess
+import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict
+
+# trunk-ignore(bandit/B404)
+from subprocess import CalledProcessError, run
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
 from .service import GitError, GitService
 
+# Constants for executables with full paths
+GIT_PATH = shutil.which("git")
+GH_PATH = shutil.which("gh")
+RM_PATH = shutil.which("rm")
+
+if not all([GIT_PATH, GH_PATH, RM_PATH]):
+    raise RuntimeError("Required executables not found")
+
 
 class ConfigExecutionError(Exception):
     """Exception raised for errors during configuration execution."""
 
-    pass
+
+def safe_run_command(
+    cmd: List[Union[str, None]], input: Optional[str] = None, **kwargs: Any
+) -> Any:
+    """Safely execute a command with subprocess."""
+    if not cmd:
+        raise ValueError("Command list cannot be empty")
+
+    # Convert all arguments to strings, skipping None values
+    cmd_list: List[str] = []
+    for arg in cmd:
+        if arg is None:
+            continue
+        try:
+            cmd_list.append(str(arg))
+        except (TypeError, ValueError):
+            raise ValueError(f"Cannot convert argument to string: {arg}")
+
+    if not cmd_list:
+        raise ValueError("Command list is empty after filtering None values")
+
+    # Validate first argument is absolute path
+    if not os.path.isabs(cmd_list[0]):
+        raise ValueError(f"First argument must be absolute path: {cmd_list[0]}")
+
+    kwargs.setdefault("shell", False)
+    kwargs.setdefault("timeout", 30)
+    kwargs.setdefault("check", True)
+
+    # trunk-ignore(bandit/B603)
+    return run(cmd_list, input=input, **kwargs)
 
 
 def execute_config(config_path: str) -> None:
@@ -61,8 +102,8 @@ def execute_config(config_path: str) -> None:
             # Initialize Git repository
             if config["git"]["create_local_repo"]:
                 print("\nInitializing Git repository...")
-                subprocess.run(["git", "init"], check=True)
-                subprocess.run(["git", "checkout", "-b", "main"], check=True)
+                safe_run_command([GIT_PATH, "init"])
+                safe_run_command([GIT_PATH, "checkout", "-b", "main"])
 
             # Create initial Python file if it doesn't exist
             if not os.path.exists("src/__init__.py"):
@@ -77,9 +118,9 @@ def execute_config(config_path: str) -> None:
             # Create initial commit
             if config["git"]["create_local_repo"]:
                 print("\nCreating initial commit...")
-                subprocess.run(["git", "add", "."], check=True)
-                subprocess.run(
-                    ["git", "commit", "-m", config["git"]["commit_message"]], check=True
+                safe_run_command([GIT_PATH, "add", "."])
+                safe_run_command(
+                    [GIT_PATH, "commit", "-m", config["git"]["commit_message"]]
                 )
 
             # Set up Git LFS if enabled
@@ -93,10 +134,10 @@ def execute_config(config_path: str) -> None:
             ):
                 print("\nCreating local branches...")
                 for branch in config["git"]["other_branches"]:
-                    subprocess.run(["git", "checkout", "-b", branch], check=True)
+                    safe_run_command([GIT_PATH, "checkout", "-b", branch])
                     print(f"Created branch '{branch}'")
                 # Return to main branch
-                subprocess.run(["git", "checkout", "main"], check=True)
+                safe_run_command([GIT_PATH, "checkout", "main"])
 
             # Create remote repository if requested
             if config["git"]["create_remote_repo"]:
@@ -105,9 +146,9 @@ def execute_config(config_path: str) -> None:
 
                 # Push all branches
                 print("\nPushing all branches...")
-                subprocess.run(["git", "push", "-u", "origin", "main"], check=True)
+                safe_run_command([GIT_PATH, "push", "-u", "origin", "main"])
                 for branch in config["git"].get("other_branches", []):
-                    subprocess.run(["git", "push", "-u", "origin", branch], check=True)
+                    safe_run_command([GIT_PATH, "push", "-u", "origin", branch])
                     print(f"Pushed branch '{branch}'")
 
             # Configure branch protection
@@ -125,19 +166,15 @@ def execute_config(config_path: str) -> None:
         try:
             if repo_created and repo_name:
                 print("\nCleaning up: Deleting remote repository...")
-                subprocess.run(
-                    ["gh", "repo", "delete", repo_name, "--yes"],
-                    check=True,
-                    capture_output=True,
-                )
+                safe_run_command([GH_PATH, "repo", "delete", repo_name, "--yes"])
                 print("Remote repository deleted.")
 
             if project_path and os.path.exists(project_path):
                 print("Cleaning up: Deleting local directory...")
-                subprocess.run(["rm", "-rf", project_path], check=True)
+                safe_run_command([RM_PATH, "-rf", project_path])
                 print("Local directory deleted.")
 
-        except subprocess.CalledProcessError as cleanup_error:
+        except CalledProcessError as cleanup_error:
             print(f"Warning: Cleanup failed: {cleanup_error}", file=sys.stderr)
 
         raise ConfigExecutionError(f"Failed to execute configuration: {str(e)}")
@@ -148,19 +185,15 @@ def execute_config(config_path: str) -> None:
         try:
             if repo_created and repo_name:
                 print("\nCleaning up: Deleting remote repository...")
-                subprocess.run(
-                    ["gh", "repo", "delete", repo_name, "--yes"],
-                    check=True,
-                    capture_output=True,
-                )
+                safe_run_command([GH_PATH, "repo", "delete", repo_name, "--yes"])
                 print("Remote repository deleted.")
 
             if project_path and os.path.exists(project_path):
                 print("Cleaning up: Deleting local directory...")
-                subprocess.run(["rm", "-rf", project_path], check=True)
+                safe_run_command([RM_PATH, "-rf", project_path])
                 print("Local directory deleted.")
 
-        except subprocess.CalledProcessError as cleanup_error:
+        except CalledProcessError as cleanup_error:
             print(f"Warning: Cleanup failed: {cleanup_error}", file=sys.stderr)
 
         sys.exit(1)
@@ -170,11 +203,8 @@ def _configure_branch_protection(git_config: Dict[str, Any]) -> None:
     """Configure branch protection rules."""
     try:
         # Get GitHub username
-        result = subprocess.run(
-            ["gh", "api", "user", "--jq", ".login"],
-            capture_output=True,
-            text=True,
-            check=True,
+        result = safe_run_command(
+            [GH_PATH, "api", "user", "--jq", ".login"], capture_output=True, text=True
         )
         username = result.stdout.strip()
         repo_name = git_config["remote"].get("name", git_config.get("project_name"))
@@ -204,9 +234,9 @@ def _configure_branch_protection(git_config: Dict[str, Any]) -> None:
             protection_json = json.dumps(protection_data)
 
             # Apply branch protection
-            subprocess.run(
+            safe_run_command(
                 [
-                    "gh",
+                    GH_PATH,
                     "api",
                     f"repos/{username}/{repo_name}/branches/{branch}/protection",
                     "--method",
@@ -220,12 +250,11 @@ def _configure_branch_protection(git_config: Dict[str, Any]) -> None:
                 ],
                 input=protection_json,
                 text=True,
-                check=True,
             )
 
             print(f"Branch protection configured for '{branch}'")
 
-    except subprocess.CalledProcessError as e:
+    except CalledProcessError as e:
         raise ConfigExecutionError(f"Failed to configure branch protection: {str(e)}")
 
 
@@ -264,8 +293,8 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
             )
 
         # First check if repository already exists
-        result = subprocess.run(
-            ["gh", "repo", "view", repo_name], capture_output=True, text=True
+        result = safe_run_command(
+            [GH_PATH, "repo", "view", repo_name], capture_output=True, text=True
         )
 
         if result.returncode == 0:
@@ -287,28 +316,28 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
                 return
             elif choice == "3":
                 print("Deleting existing repository...")
-                subprocess.run(["gh", "repo", "delete", repo_name, "--yes"], check=True)
+                safe_run_command([GH_PATH, "repo", "delete", repo_name, "--yes"])
 
                 # Re-initialize Git repository after deletion
                 print("Re-initializing Git repository...")
-                subprocess.run(["rm", "-rf", ".git"], check=True)
-                subprocess.run(["git", "init"], check=True)
-                subprocess.run(["git", "checkout", "-b", "main"], check=True)
+                safe_run_command([RM_PATH, "-rf", ".git"])
+                safe_run_command([GIT_PATH, "init"])
+                safe_run_command([GIT_PATH, "checkout", "-b", "main"])
 
                 # Stage and commit all files
-                subprocess.run(["git", "add", "."], check=True)
-                subprocess.run(
-                    ["git", "commit", "-m", git_config["commit_message"]], check=True
+                safe_run_command([GIT_PATH, "add", "."])
+                safe_run_command(
+                    [GIT_PATH, "commit", "-m", git_config["commit_message"]]
                 )
 
                 # Create other branches
                 if git_config.get("other_branches"):
                     print("\nRecreating local branches...")
                     for branch in git_config["other_branches"]:
-                        subprocess.run(["git", "checkout", "-b", branch], check=True)
+                        safe_run_command([GIT_PATH, "checkout", "-b", branch])
                         print(f"Recreated branch '{branch}'")
                     # Return to main branch
-                    subprocess.run(["git", "checkout", "main"], check=True)
+                    safe_run_command([GIT_PATH, "checkout", "main"])
             else:
                 raise ConfigExecutionError(
                     "Invalid choice. Aborting remote repository creation."
@@ -317,9 +346,9 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
         # Create remote repository
         try:
             # First create empty repository
-            subprocess.run(
+            safe_run_command(
                 [
-                    "gh",
+                    GH_PATH,
                     "repo",
                     "create",
                     repo_name,
@@ -339,9 +368,9 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
             print("Remote repository created successfully")
 
             # Add remote
-            subprocess.run(
+            safe_run_command(
                 [
-                    "git",
+                    GIT_PATH,
                     "remote",
                     "add",
                     "origin",
@@ -355,11 +384,11 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
             )
 
             # Push to remote
-            subprocess.run(["git", "push", "-u", "origin", "main"], check=True)
+            safe_run_command([GIT_PATH, "push", "-u", "origin", "main"])
 
             print("Code pushed to remote repository")
 
-        except subprocess.CalledProcessError as e:
+        except CalledProcessError as e:
             if "already exists" in e.stderr:
                 raise ConfigExecutionError(
                     f"Repository '{repo_name}' already exists and was not handled "
@@ -376,7 +405,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
         # Configure repository features
         _configure_repo_features(repo_name, remote_config)
 
-    except subprocess.CalledProcessError as e:
+    except CalledProcessError as e:
         if "could not read" in str(e.stderr):
             raise ConfigExecutionError(
                 "Failed to check repository existence. Please verify your GitHub "
@@ -389,9 +418,9 @@ def _update_remote_repo(repo_name: str, remote_config: Dict[str, Any]) -> None:
     """Update existing remote repository settings."""
     try:
         # Update basic settings
-        subprocess.run(
+        safe_run_command(
             [
-                "gh",
+                GH_PATH,
                 "repo",
                 "edit",
                 repo_name,
@@ -408,7 +437,7 @@ def _update_remote_repo(repo_name: str, remote_config: Dict[str, Any]) -> None:
 
         print("Repository settings updated successfully")
 
-    except subprocess.CalledProcessError as e:
+    except CalledProcessError as e:
         raise ConfigExecutionError(f"Failed to update repository settings: {e.stderr}")
 
 
@@ -429,23 +458,22 @@ def _configure_repo_features(repo_name: str, remote_config: Dict[str, Any]) -> N
 
         if feature_flags:
             # Get GitHub username
-            result = subprocess.run(
-                ["gh", "api", "user", "--jq", ".login"],
+            result = safe_run_command(
+                [GH_PATH, "api", "user", "--jq", ".login"],
                 capture_output=True,
                 text=True,
-                check=True,
             )
             username = result.stdout.strip()
 
             # Format full repository name
             full_repo_name = f"{username}/{repo_name}"
 
-            subprocess.run(
-                ["gh", "repo", "edit", full_repo_name] + feature_flags, check=True
+            safe_run_command(
+                [GH_PATH, "repo", "edit", full_repo_name] + feature_flags, check=True
             )
             print("Repository features configured successfully")
 
-    except subprocess.CalledProcessError as e:
+    except CalledProcessError as e:
         if e.stderr:
             raise ConfigExecutionError(
                 f"Failed to configure repository features: {e.stderr}"
@@ -460,11 +488,11 @@ def _setup_git_lfs(git: GitService, lfs_config: Dict[str, Any]) -> None:
     """Set up Git LFS for specified patterns."""
     try:
         # Initialize LFS with force to overwrite hooks
-        subprocess.run(["git", "lfs", "install", "--force"], check=True)
+        safe_run_command([GIT_PATH, "lfs", "install", "--force"])
 
         # Track patterns
         for pattern in lfs_config.get("patterns", []):
-            subprocess.run(["git", "lfs", "track", pattern], check=True)
+            safe_run_command([GIT_PATH, "lfs", "track", pattern])
 
         # Ensure .gitattributes exists
         if not os.path.exists(".gitattributes"):
@@ -476,7 +504,7 @@ def _setup_git_lfs(git: GitService, lfs_config: Dict[str, Any]) -> None:
 
         print("Git LFS configured successfully")
 
-    except (subprocess.CalledProcessError, GitError) as e:
+    except (CalledProcessError, GitError) as e:
         raise ConfigExecutionError(f"Failed to configure Git LFS: {str(e)}")
 
 
@@ -531,8 +559,8 @@ def _setup_git_hooks(git: GitService, hooks_config: Dict[str, Any]) -> None:
             hook_path.chmod(0o755)
 
             print(
-                f"Git hook '{hook_type}' configured with commands: {', '.join(commands)}"  # noqa: E501
-            )
+                f"Git hook '{hook_type}' configured with commands: {', '.join(commands)}"
+            )  # noqa: E501
 
         print("Git hooks configured successfully")
 

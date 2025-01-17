@@ -1,7 +1,9 @@
 {
   "editor.fontSize": 14,
   "editor.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
+  "editor.defaultFormatter": null,
   "editor.tabSize": 2,
+  "editor.useTabStops": true,
   "editor.wordWrap": "on",
   "editor.minimap.enabled": false,
   "editor.formatOnSave": true,
@@ -10,8 +12,8 @@
   "editor.suggestSelection": "first",
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
-  "workbench.colorTheme": "One Dark Pro",
-  "workbench.iconTheme": "material-icon-theme",
+  // "workbench.colorTheme": "One Dark Pro",
+  "workbench.iconTheme": "eq-material-theme-icons-ocean",
   "terminal.integrated.fontSize": 14,
   "terminal.integrated.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
   "terminal.integrated.cursorStyle": "line",
@@ -23,28 +25,18 @@
   "git.enableSmartCommit": true,
   "git.autofetch": true,
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "trunk.io",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
+      "source.organizeImports": "explicit",
+      "source.fixAll.ruff": "explicit"
     }
   },
   "extensions.ignoreRecommendations": false,
-  "extensions.autoUpdate": true,
-  "python.disableInstallationCheck": true,
-  "security.workspace.trust.enabled": true,
-  "security.workspace.trust.startupPrompt": "always",
-  "security.workspace.trust.emptyWindow": false,
-  "extensions.supportUntrustedWorkspaces": {
-    "ms-python.python": {
-      "supported": "limited"
-    },
-    "ms-python.vscode-pylance": {
-      "supported": "limited"
-    }
-  },
   "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
-  "python.pythonPath": "${workspaceFolder}/",
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}"
+  },
   "python.analysis.extraPaths": ["${workspaceFolder}"],
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
@@ -54,5 +46,38 @@
   "accessibility.signals.terminalBell": {
     "sound": "off"
   },
-  "terminal.integrated.enableVisualBell": false
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.trunk/*actions/": true,
+    "**/.trunk/*logs/": true,
+    "**/.trunk/*notifications/": true,
+    "**/.trunk/*out/": true,
+    "**/.trunk/*plugins/": true,
+    ".gitattributes": true,
+    "_CODER.coder.yaml": true,
+    "pytest.ini": true,
+    "pyproject.toml": true,
+    ".coverage": true,
+    ".cursorrules": true,
+    "_test_project.yaml": true,
+    "code_helpers.egg-info": true,
+    ".pytest_cache": true,
+    ".logfire": true,
+    ".github": true,
+    "__pycache__": true,
+    "alfie/__pycache__": true,
+    "core/__pycache__": true,
+    "network/__pycache__": true,
+    "notion/__pycache__": true,
+    "projects/__pycache__": true,
+    "system/__pycache__": true,
+    ".env.sample": true,
+    "notion/management/__pycache__": true
+  },
+  "hide-files.files": []
 }

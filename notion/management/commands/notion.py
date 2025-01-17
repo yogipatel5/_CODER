@@ -8,11 +8,12 @@ from typing import Dict, Type
 
 from django.core.management.base import BaseCommand, CommandError
 
-from .base import NOTION_TOOLS
 from .base_command import NotionBaseCommand
 
 
 class Command(BaseCommand):
+    """Notion management commands"""
+
     help = "Notion management commands"
 
     def __init__(self):
@@ -26,7 +27,7 @@ class Command(BaseCommand):
 
         # Load commands from main directory
         for file in current_dir.glob("*.py"):
-            if file.stem in ["__init__", "notion", "base"]:
+            if file.stem in ["__init__", "notion", "base_command"]:
                 continue
             self._try_load_command(file)
 
@@ -40,7 +41,7 @@ class Command(BaseCommand):
     def _try_load_command(self, file: Path, subdir: str = ""):
         """Try to load a command from a file."""
         try:
-            module_path = f"notion.management.commands"
+            module_path = "notion.management.commands"
             if subdir:
                 module_path += f".{subdir}"
             module_path += f".{file.stem}"
@@ -48,8 +49,9 @@ class Command(BaseCommand):
             module = importlib.import_module(module_path)
             if hasattr(module, "Command"):
                 command_class = getattr(module, "Command")
-                if issubclass(command_class, NotionBaseCommand):
-                    self.commands[file.stem] = command_class
+                # Instantiate the command to trigger tool registration
+                command_class()
+                self.commands[file.stem] = command_class
         except ImportError as e:
             self.stderr.write(f"Failed to load command {file.stem}: {e}")
 

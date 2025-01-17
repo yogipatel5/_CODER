@@ -5,6 +5,7 @@ This directory contains Django management commands for interacting with the Noti
 ## Available Commands
 
 ### Page Management
+
 ```bash
 # List all pages
 python manage.py list_pages [--database DATABASE_ID] [--limit N]
@@ -29,6 +30,7 @@ python manage.py search_pages "query"
 ```
 
 ### Block Management
+
 ```bash
 # Create a block
 python manage.py manage_blocks create PARENT_ID --type TYPE --content "Content"
@@ -41,6 +43,7 @@ python manage.py manage_blocks delete BLOCK_ID
 ```
 
 ### Database Management
+
 ```bash
 # List databases
 python manage.py list_databases
@@ -49,6 +52,7 @@ python manage.py list_databases
 ## Standardized JSON Response Format
 
 All commands return responses in this format:
+
 ```json
 {
   "success": true/false,
@@ -65,6 +69,7 @@ All commands return responses in this format:
 ### Command-Specific Data Structures
 
 #### get_page
+
 ```json
 {
   "data": {
@@ -94,6 +99,7 @@ All commands return responses in this format:
 ```
 
 #### list_pages
+
 ```json
 {
   "data": {
@@ -115,6 +121,7 @@ All commands return responses in this format:
 ```
 
 #### update_page_json
+
 ```json
 {
   "data": {
@@ -128,17 +135,20 @@ All commands return responses in this format:
 ## Core Components
 
 ### 1. Base Classes (`base.py`)
+
 - `NotionAPI`: Client for interacting with Notion's API
 - `NotionBaseCommand`: Base class for all command implementations
 
 ### 2. Best Practices
 
 1. **Error Handling**
+
    - All commands include proper error messages
    - Parent/block IDs are validated
    - JSON responses include error details
 
 2. **Command Features**
+
    - Support for both CLI and JSON output
    - Verbose progress reporting
    - Helpful context messages
@@ -147,4 +157,4 @@ All commands return responses in this format:
    - Unit tests in `notion/tests/`
    - Manual testing script
    - JSON response validation
-</rewritten_file>
+     </rewritten_file>

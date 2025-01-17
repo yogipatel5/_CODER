@@ -1,0 +1,6 @@
+# Production dependencies
+-r base.txt
+-r ai.txt
+-r tools.txt
+gunicorn>=22.0.0
+psycopg2-binary==2.9.9

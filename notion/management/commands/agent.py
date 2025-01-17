@@ -3,7 +3,6 @@ Command to run Notion agent tasks.
 """
 
 import logging
-import os
 from pathlib import Path
 
 import yaml
@@ -11,7 +10,8 @@ from crewai import Agent, Crew, Task
 from django.core.management.base import BaseCommand, CommandError
 from dotenv import load_dotenv
 
-from .base import NOTION_TOOLS
+from notion.management.commands.run.create_page import NotionCreatePageTool
+from notion.management.commands.run.list_pages import NotionListPagesTool
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -51,6 +51,8 @@ class Command(BaseCommand):
 
             agent_config = agents_config[options["agent"]]
 
+            # Initialize tools
+
             # Create agent with tools
             agent = Agent(
                 role=agent_config["role"],
@@ -58,8 +60,10 @@ class Command(BaseCommand):
                 backstory=agent_config["backstory"],
                 verbose=agent_config.get("verbose", True),
                 allow_delegation=agent_config.get("allow_delegation", False),
-                tools=NOTION_TOOLS,
+                tools=[NotionListPagesTool(), NotionCreatePageTool()],
             )
+
+            print(agent_config)
 
             # Create task with expected output
             task = Task(

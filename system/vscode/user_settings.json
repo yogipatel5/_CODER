@@ -1,4 +1,11 @@
 {
+  "files.exclude": {
+    "**/*.pyc": true,
+    "**/__pycache__": true,
+    "**/*.egg-info": true,
+    "**/.DS_Store": true,
+    "**/.pytest_cache": true
+  },
   "editor.fontSize": 14,
   "editor.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
   "editor.tabSize": 2,
@@ -9,7 +16,6 @@
   "editor.rulers": [80, 100],
   "editor.suggestSelection": "first",
   "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 1000,
   "workbench.colorTheme": "One Dark Pro",
   "workbench.iconTheme": "material-icon-theme",
   "terminal.integrated.fontSize": 14,

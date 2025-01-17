@@ -20,15 +20,6 @@ def process_data(
         "input_list": input_list,
     }
 
-    # Variable type hints
-    count: int = 0
-
-    # Long line that might trigger E501
-    really_long_string = "This is a really long string that might trigger the line length warning in some linters but we're ignoring E501"
-
-    # Unused variable (should trigger F841)
-    unused_var = 42
-
     # Missing type hints (should trigger mypy)
     def inner_function(param: int) -> int:
         return param + 1

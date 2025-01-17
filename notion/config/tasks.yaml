@@ -23,3 +23,10 @@ edit_page_task:
     A well-structured and properly formatted Notion page about {topic}, with clear
     sections, appropriate formatting, and relevant connections to other content.
   agent: notion_editor
+
+clean_up_notes_task:
+  description: >
+    Clean up the Messy Notes Page and Subpages by organizing notes into categories and subcategories in the Clean Notes Page and Subpages.
+  expected_output: >
+    A clean and organized Messy Notes Page with all notes properly categorized and subcategorized. Use Notion organization tools to organize the notes.
+  agent: notes_organizer

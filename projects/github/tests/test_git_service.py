@@ -31,6 +31,7 @@ class TestGitService(unittest.TestCase):
     def test_init_new_repo(self) -> None:
         """Test initialization of new repository."""
         git = GitService(self.test_dir)
+        self.assertIsInstance(git, GitService)  # Verify instance creation
         self.assertTrue((Path(self.test_dir) / ".git").exists())
 
     def test_stage_and_commit(self) -> None:

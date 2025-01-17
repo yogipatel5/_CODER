@@ -1,11 +1,58 @@
 #!/usr/bin/env python3
 import csv
 import os
-import subprocess
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+
+# trunk-ignore(bandit/B404)
+from subprocess import CalledProcessError, run
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+
+def safe_run_command(cmd: List[str], **kwargs) -> Any:
+    """Safely execute a command with subprocess."""
+    if not cmd:
+        raise ValueError("Command list cannot be empty")
+
+    # Get full path for executable
+    cmd_path = shutil.which(cmd[0])
+    if not cmd_path:
+        raise ValueError(f"Command not found: {cmd[0]}")
+
+    # Replace command with full path
+    cmd[0] = cmd_path
+
+    # Set safe defaults
+    kwargs.setdefault("shell", False)
+    kwargs.setdefault("check", True)
+
+    # trunk-ignore(bandit/B603)
+    return run(cmd, **kwargs)
+
+
+def create_directory(path: str) -> None:
+    """Create directory if it doesn't exist."""
+    os.makedirs(path, exist_ok=True)
+
+
+def delete_directory(path: str) -> None:
+    """Delete directory if it exists."""
+    if os.path.exists(path):
+        shutil.rmtree(path)
+
+
+def initialize_git_repo(path: str, branch: Optional[str] = "main") -> None:
+    """Initialize a git repository in the given directory."""
+    # Remove .git directory if it exists
+    git_dir = os.path.join(path, ".git")
+    if os.path.exists(git_dir):
+        delete_directory(git_dir)
+
+    # Initialize git repo
+    safe_run_command(["git", "init"], cwd=path)
+    safe_run_command(["git", "checkout", "-b", branch], cwd=path)
 
 
 def is_git_repo(path: str) -> bool:
@@ -18,41 +65,38 @@ def get_git_info(path: str) -> Dict[str, Union[str, bool]]:
     """Get git repository information"""
     try:
         # Get remote URL
-        result = subprocess.run(
+        result = safe_run_command(
             ["git", "config", "--get", "remote.origin.url"],
             cwd=path,
             capture_output=True,
             text=True,
-            check=True,
         )
         remote_url = result.stdout.strip()
-    except subprocess.CalledProcessError:
+    except CalledProcessError:
         remote_url = "No remote URL"
 
     try:
         # Get current branch
-        result = subprocess.run(
+        result = safe_run_command(
             ["git", "branch", "--show-current"],
             cwd=path,
             capture_output=True,
             text=True,
-            check=True,
         )
         branch = result.stdout.strip()
-    except subprocess.CalledProcessError:
+    except CalledProcessError:
         branch = "Unknown"
 
     try:
         # Check if there are uncommitted changes
-        result = subprocess.run(
+        result = safe_run_command(
             ["git", "status", "--porcelain"],
             cwd=path,
             capture_output=True,
             text=True,
-            check=True,
         )
         has_changes = bool(result.stdout.strip())
-    except subprocess.CalledProcessError:
+    except CalledProcessError:
         has_changes = False
 
     return {"remote_url": remote_url, "branch": branch, "has_changes": has_changes}
@@ -61,7 +105,6 @@ def get_git_info(path: str) -> Dict[str, Union[str, bool]]:
 def get_organization_recommendation(repo_info: Dict[str, Any]) -> Tuple[str, str]:
     """Get recommendation for organizing a directory"""
     name = repo_info["name"].lower()
-    is_git = repo_info["is_git"]
     remote_url = repo_info["remote_url"].lower()
 
     # Hidden directories and cache
@@ -199,9 +242,9 @@ def process_actions(csv_file: str, dry_run: bool = False) -> None:
                             os.makedirs(target_dir)
                         target_path = os.path.join(target_dir, name)
                         print(f"Moving {path} to {target_path}")
-                        subprocess.run(["mv", path, target_path], check=True)
+                        safe_run_command(["mv", path, target_path])
                         print(f"Successfully moved {path}")
-                    except subprocess.CalledProcessError as e:
+                    except (CalledProcessError, OSError) as e:
                         print(f"Error moving directory {path}: {e}")
 
             elif action == "remove":
@@ -210,9 +253,9 @@ def process_actions(csv_file: str, dry_run: bool = False) -> None:
                 else:
                     try:
                         print(f"Deleting directory: {path}")
-                        subprocess.run(["rm", "-rf", path], check=True)
+                        safe_run_command(["rm", "-rf", path])
                         print(f"Successfully deleted {path}")
-                    except subprocess.CalledProcessError as e:
+                    except (CalledProcessError, OSError) as e:
                         print(f"Error deleting directory {path}: {e}")
 
             elif action == "backup":
@@ -224,12 +267,12 @@ def process_actions(csv_file: str, dry_run: bool = False) -> None:
                 else:
                     try:
                         print(f"Creating backup of {path}")
-                        subprocess.run(["cp", "-r", path, backup_path], check=True)
+                        safe_run_command(["cp", "-r", path, backup_path])
                         print(f"Successfully backed up to {backup_path}")
                         print(f"Deleting original directory: {path}")
-                        subprocess.run(["rm", "-rf", path], check=True)
+                        safe_run_command(["rm", "-rf", path])
                         print(f"Successfully deleted {path}")
-                    except subprocess.CalledProcessError as e:
+                    except (CalledProcessError, OSError) as e:
                         print(f"Error processing backup/delete for {path}: {e}")
 
 
