@@ -6,4 +6,3 @@
 # Pin specific versions for security
 langchain==0.3.1  # Fix multiple security vulnerabilities
 GitPython==3.1.41  # Fix CVE-2023-40590
-black==24.3.0  # Fix ReDoS vulnerability
