@@ -4,7 +4,6 @@ list_pages_task:
     including titles, IDs, parent relationships, and timestamps.
   expected_output: >
     A formatted list of all pages with their metadata, organized in a clear and readable way.
-  agent: notion_manager
 
 research_pages_task:
   description: >
@@ -13,7 +12,6 @@ research_pages_task:
   expected_output: >
     A comprehensive analysis of the pages related to {topic}, including key findings,
     patterns, and recommendations.
-  agent: notion_researcher
 
 edit_page_task:
   description: >
@@ -22,11 +20,16 @@ edit_page_task:
   expected_output: >
     A well-structured and properly formatted Notion page about {topic}, with clear
     sections, appropriate formatting, and relevant connections to other content.
-  agent: notion_editor
 
 clean_up_notes_task:
   description: >
-    Clean up the Messy Notes Page and Subpages by organizing notes into categories and subcategories in the Clean Notes Page and Subpages.
+    Clean up any notes in the Messy Notes Subpages by organizing notes into categories and subcategories in the Clean Notes Page and Subpages.
   expected_output: >
     A clean and organized Messy Notes Page with all notes properly categorized and subcategorized. Use Notion organization tools to organize the notes.
-  agent: notes_organizer
+
+analyze_notes_task:
+  description: >
+    Analyze the notes in the Clean Notes Page and Subpages to find patterns and insights.
+  expected_output: >
+    A detailed analysis of the notes in the Clean Notes Page and Subpages, including key findings,
+    patterns, and recommendations.

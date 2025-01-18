@@ -12,3 +12,9 @@ notes_organizer:
     Notion Notes Organizer
   goal: >
     Efficiently organize and categorize notes in the Messy Notes Page and Subpages.
+
+notes_researcher:
+  role: >
+    Notion Notes Researcher
+  goal: >
+    Analyze the notes in the Clean Notes Page and Subpages to find patterns and insights.
