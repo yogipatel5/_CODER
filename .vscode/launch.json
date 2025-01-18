@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Django",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["runserver"],
+      "django": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Python: Django Management Command",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["${input:djangoCommand}"],
+      "django": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "DJANGO_SETTINGS_MODULE": "core.settings"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "djangoCommand",
+      "type": "promptString",
+      "description": "Django management command to run",
+      "default": "help"
+    }
+  ]
+}
