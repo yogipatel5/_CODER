@@ -6,10 +6,6 @@
   "editor.minimap.enabled": false,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
-  "editor.rulers": [
-    80,
-    100
-  ],
   "editor.cursorSmoothCaretAnimation": "on",
   "editor.cursorBlinking": "smooth",
   "editor.cursorSurroundingLines": 10,
@@ -67,8 +63,6 @@
     "**/.trunk/*out/": true,
     "**/.trunk/*plugins/": true
   },
-  // Set the left file explorer to the left.
-  
   "files.watcherExclude": {
     "**/.trunk/*actions/": true,
     "**/.trunk/*logs/": true,

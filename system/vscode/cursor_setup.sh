@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Constants
-EXTENSIONS_FILE="cursor_extensions.txt"
-SETTINGS_FILE="cursor_settings.json"
+EXTENSIONS_FILE="${PWD}/system/vscode/cursor_extensions.txt"
+SETTINGS_FILE="${PWD}/system/vscode/cursor_settings.json"
 
 # Function to show usage
 show_usage() {
@@ -16,14 +16,16 @@ show_usage() {
 export_config() {
 	echo "Exporting Cursor/VS Code configuration..."
 
-	# Export extensions
+	# Export extensions with full IDs
 	echo "Exporting extensions..."
-	code --list-extensions >"${EXTENSIONS_FILE}"
+	# Get the list of installed extensions with their full IDs - Dont remove the versions
+	# trunk-ignore(shellcheck/SC2312)
+	cursor --list-extensions --show-versions | cut -d@ -f1 >"${EXTENSIONS_FILE}"
 
 	# Export settings
 	echo "Exporting settings..."
 	if [[ ${OSTYPE} == "darwin"* ]]; then
-		cp ~/Library/Application\ Support/Cursor/User/settings.json "${SETTINGS_FILE}"
+		cp "${HOME}/Library/Application Support/Cursor/User/settings.json" "${SETTINGS_FILE}"
 	else
 		echo "Unsupported OS for settings export"
 		exit 1
@@ -45,17 +47,27 @@ import_config() {
 		exit 1
 	fi
 
+	# Uninstall currently installed extensions that are listed in the extensions file
+	echo "Uninstalling existing extensions..."
+	while IFS= read -r extension; do
+		# trunk-ignore(shellcheck/SC2312)
+		if cursor --list-extensions | grep -q "^${extension}$"; then
+			echo "Uninstalling extension: ${extension}"
+			cursor --uninstall-extension "${extension}"
+		fi
+	done <"${EXTENSIONS_FILE}"
+
 	# Install extensions
 	echo "Installing extensions..."
 	while IFS= read -r extension; do
 		echo "Installing extension: ${extension}"
-		code --install-extension "${extension}"
+		cursor --install-extension "${extension}"
 	done <"${EXTENSIONS_FILE}"
 
 	# Import settings
 	echo "Importing settings..."
 	if [[ ${OSTYPE} == "darwin"* ]]; then
-		cp "${SETTINGS_FILE}" ~/Library/Application\ Support/Cursor/User/settings.json
+		cp "${SETTINGS_FILE}" "${HOME}/Library/Application Support/Cursor/User/settings.json"
 	else
 		echo "Unsupported OS for settings import"
 		exit 1
@@ -80,12 +92,3 @@ case "${1}" in
 	show_usage
 	;;
 esac
-
-mkdir -p crewai/tools crewai/config
-touch crewai/__init__.py
-touch crewai/main.py
-touch crewai/crew.py
-touch crewai/tools/__init__.py
-touch crewai/tools/custom_tool.py
-touch crewai/config/agents.yaml
-touch crewai/config/tasks.yaml
