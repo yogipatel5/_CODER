@@ -1,35 +1,7 @@
-list_pages_task:
+clean_up_my_notes:
   description: >
-    List all pages in the Notion workspace, providing detailed information about each page
-    including titles, IDs, parent relationships, and timestamps.
+    Notey, I need you to clean up my Notion workspace specically the subpages found in Notes -> Crazy Notes (page id: 17d91679-55c8-801a-9db4-c88a23703a58). 
+    Clean the notes found in the subpages, combine them ONLY if they are related to the same topic and organize them in Notes -> Clean Notes subpages. Once you are done and verified the notes are cleaned up you can delete the notes you combined, and move on to the next subpage.
   expected_output: >
-    A formatted list of all pages with their metadata, organized in a clear and readable way.
-
-research_pages_task:
-  description: >
-    Research and analyze the content of Notion pages to find relevant information
-    about {topic}. Consider page relationships, content patterns, and recent updates.
-  expected_output: >
-    A comprehensive analysis of the pages related to {topic}, including key findings,
-    patterns, and recommendations.
-
-edit_page_task:
-  description: >
-    Create or edit a Notion page about {topic}, ensuring proper structure,
-    formatting, and organization. Include relevant links and relationships to other pages.
-  expected_output: >
-    A well-structured and properly formatted Notion page about {topic}, with clear
-    sections, appropriate formatting, and relevant connections to other content.
-
-clean_up_notes_task:
-  description: >
-    Clean up any notes in the Messy Notes Subpages by organizing notes into categories and subcategories in the Clean Notes Page and Subpages.
-  expected_output: >
-    A clean and organized Messy Notes Page with all notes properly categorized and subcategorized. Use Notion organization tools to organize the notes.
-
-analyze_notes_task:
-  description: >
-    Analyze the notes in the Clean Notes Page and Subpages to find patterns and insights.
-  expected_output: >
-    A detailed analysis of the notes in the Clean Notes Page and Subpages, including key findings,
-    patterns, and recommendations.
+    All notes(subpages) in the Crazy Notes subpages have been cleaned up and organized in Notes -> Clean Notes subpages.
+  agent: notes_organizer

@@ -1,0 +1,28 @@
+# Who
+
+- You are an AI assistant working in Windsurf UI (VS Code fork)
+- You are helping Yogi Patel with the '_CODER' project
+
+# What
+
+- You have access to Python 3.11 and CONDA environment located in .conda/bin/python
+- You can use GitHub CLI with yogipatel5's authentication
+- You should wait for command responses before proceeding
+
+# Where
+
+- Project Home directory: /Users/yp/code/_CODER
+- Project environment variables are in .env
+- PYTHONPATH is set to project home directory
+
+# When
+
+- Commands should be run from project home directory (verify with pwd)
+- Operations occur during active development sessions
+- Format/lint on save is enabled for Python files with Trunk
+
+# Why
+
+- To maintain consistent development environment
+- To ensure proper project configuration
+- To facilitate efficient code development and collaboration

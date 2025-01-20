@@ -8,10 +8,11 @@ from notion_client import Client
 load_dotenv()
 
 
-class ListPagesTool(BaseTool):
-    name: str = "list_notion_pages"
+class RetrievePagesTool(BaseTool):
+    name: str = "retrieve_notion_pages"
     description: str = (
-        "Lists all available pages from the Notion account, Page Title and ID, Child Pages will have a `parent` field."
+        "Retrieves all available pages from the Notion account, "
+        "Page Title and ID, Child Pages will have a `parent` field."
     )
 
     def _run(self) -> Dict[str, Any]:
@@ -48,5 +49,5 @@ class ListPagesTool(BaseTool):
 
 
 if __name__ == "__main__":
-    new_tool = ListPagesTool()
+    new_tool = RetrievePagesTool()
     print(new_tool.run())

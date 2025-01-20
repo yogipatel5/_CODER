@@ -1,8 +1,12 @@
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from crewai.tools import *
-
-from notion.tools.create_page import CreatePageTool
+from tools import (
+    CreatePageWithMarkdownTool,
+    DeletePageTool,
+    GetPageInMarkdownTool,
+    RetrievePagesTool,
+    UpdatePageWithMarkdownTool,
+)
 
 # If you want to run a snippet of code before or after the crew starts,
 # you can use the @before_kickoff and @after_kickoff decorators
@@ -19,31 +23,39 @@ class NotionCrew:
     # If you would like to add tools to your agents, you can learn more about it here:
     # https://docs.crewai.com/concepts/agents#agent-tools
 
-    @agent
-    def notes_researcher(self) -> Agent:
-        return Agent(
-            config=self.agents_config["notes_researcher"],
-            verbose=True,
-            tools=[()],
-        )
+    # @agent
+    # def notes_researcher(self) -> Agent:
+    #     return Agent(
+    #         config=self.agents_config["notes_researcher"],
+    #         verbose=True,
+    #         tools=[
+    #             RetrievePagesTool(),
+    #             CreatePageTool(),
+    #             UpdatePageTool(),
+    #             DeletePageTool(),
+    #             GetPageInMarkdownTool(),
+    #             GetPageContentTool(),
+    #         ],
+    #     )
 
     @agent
     def notes_organizer(self) -> Agent:
         return Agent(
-            config=self.agents_config["notes_researcher"],
+            config=self.agents_config["notes_organizer"],
             verbose=True,
             tools=[
-                CreatePageTool(),
-                UpdatePageTool(),
+                RetrievePagesTool(),
+                UpdatePageWithMarkdownTool(),
                 DeletePageTool(),
-                ListPagesTool(),
+                GetPageInMarkdownTool(),
+                CreatePageWithMarkdownTool(),
             ],
         )
 
     @task
-    def organize_notes_tasks(self) -> Task:
+    def clean_up_my_notes(self) -> Task:
         return Task(
-            config=self.tasks_config["clean_up_notes_task"],
+            config=self.tasks_config["clean_up_my_notes"],
         )
 
     @crew
