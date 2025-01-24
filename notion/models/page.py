@@ -12,12 +12,12 @@ class Page(models.Model):
     created_time = models.DateTimeField()
     last_edited_time = models.DateTimeField()
 
-    created_by = models.ForeignKey(
-        "notion.User", related_name="created_pages", on_delete=models.SET_NULL, null=True, blank=True
-    )
-    last_edited_by = models.ForeignKey(
-        "notion.User", related_name="edited_pages", on_delete=models.SET_NULL, null=True, blank=True
-    )
+    # created_by = models.ForeignKey(
+    #     "notion.User", related_name="created_pages", on_delete=models.SET_NULL, null=True, blank=True
+    # )
+    # last_edited_by = models.ForeignKey(
+    #     "notion.User", related_name="edited_pages", on_delete=models.SET_NULL, null=True, blank=True
+    # )
 
     cover = models.TextField(null=True, blank=True)  # Could be an image or file
     icon = models.CharField(max_length=50, null=True, blank=True)  # emoji

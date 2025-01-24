@@ -1,14 +1,15 @@
 """Tasks for scanning Notion pages."""
+
 import logging
 from datetime import datetime, timedelta
 from typing import List
 
 from celery import shared_task
 from django.utils import timezone
+from services.notion import NotionService
 
 from notion.models.notionagentjobs import NotionAgentJob
 from notion.models.task import Task
-from notion.services.notion_service import NotionService
 
 logger = logging.getLogger(__name__)
 

@@ -15,11 +15,11 @@ import os
 from pathlib import Path
 
 import yaml
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+from core.vault_settings import get_vault_settings
 
+# Get settings from Vault
+vault_settings = get_vault_settings()
 
 # if project.yaml exists, load it
 try:
@@ -33,10 +33,10 @@ try:
 except FileNotFoundError:
     pass
 
-LOGFIRE_TOKEN = os.getenv("LOGFIRE_TOKEN", "VKB9cfmnDYRp1n5dGh362g5CmYwhrGgSnFgD5YkK5T6x")
-# TODO: Need to add logfire logging configuration to LOGGING setting
-
-LOGFIRE_PROJECT = "coder"
+# Get Logfire settings from Vault
+logfire_settings = vault_settings.get("logfire", {})
+LOGFIRE_TOKEN = logfire_settings.get("token", os.getenv("LOGFIRE_TOKEN", ""))
+LOGFIRE_PROJECT = logfire_settings.get("project", "coder")
 
 LOGGING = {
     "version": 1,
@@ -82,14 +82,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-6_+=dtw-cnix4njfi6hiv1r0ar@#mbk09frbjp+ee7c7sov=ua"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
-
+# Get Django core settings from Vault
+django_settings = vault_settings.get("django", {})
+SECRET_KEY = django_settings.get("secret_key", os.getenv("DJANGO_SECRET_KEY", ""))
+DEBUG = django_settings.get("debug", os.getenv("DJANGO_DEBUG", "True")).lower() == "true"
+ALLOWED_HOSTS = django_settings.get(
+    "allowed_hosts", os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+)
 
 # Application definition
 
@@ -100,21 +99,21 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Local apps
     "alfie.apps.AlfieConfig",
     "core.apps.CoreConfig",
-    "network.apps.NetworkConfig",
     # "projects.apps.ProjectsConfig",
-    "system.apps.SystemConfig",
-    "notion.apps.NotionConfig",
-    "network.pfsense.apps.PfsenseConfig",
     # "projects.github.apps.GithubConfig",
     "projects.vault.apps.VaultConfig",
-    # Third party apps
+    "notion.apps.NotionConfig",  # Temporarily disabled until models are set up
+    "network.pfsense.apps.PfsenseConfig",
+    "system.apps.SystemConfig",
+    "network.apps.NetworkConfig",
     "django_celery_beat",
+    # Third party apps
 ]
 
 # Notion Configuration
+# Temporarily disabled until models are set up
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 if not NOTION_API_KEY:
     logging.warning("NOTION_API_KEY environment variable not set")
@@ -153,22 +152,29 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# Get database settings from Vault
+db_settings = vault_settings.get("database", {})
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),
-        "PORT": os.getenv("POSTGRES_PORT"),
+        "NAME": db_settings.get("name", os.getenv("POSTGRES_DB")),
+        "USER": db_settings.get("user", os.getenv("POSTGRES_USER")),
+        "PASSWORD": db_settings.get("password", os.getenv("POSTGRES_PASSWORD")),
+        "HOST": db_settings.get("host", os.getenv("POSTGRES_HOST")),
+        "PORT": db_settings.get("port", os.getenv("POSTGRES_PORT")),
     }
 }
+
+# Get Redis settings from Vault
+redis_settings = vault_settings.get("redis", {})
+REDIS_HOST = redis_settings.get("host", os.getenv("REDIS_HOST"))
+REDIS_PORT = redis_settings.get("port", os.getenv("REDIS_PORT"))
 
 # Redis Cache
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}/1",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -179,14 +185,16 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+# Get Celery settings from Vault
+celery_settings = vault_settings.get("celery", {})
+CELERY_BROKER_URL = celery_settings.get("broker_url", os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"))
+CELERY_RESULT_BACKEND = celery_settings.get(
+    "result_backend", os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "America/New_York"
+CELERY_TIMEZONE = celery_settings.get("timezone", "America/New_York")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 

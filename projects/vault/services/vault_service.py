@@ -40,9 +40,9 @@ class VaultService:
 
                 # Initialize the environment path with metadata
                 self.client.client.secrets.kv.v2.create_or_update_secret(
-                    path="metadata",
+                    path=f"{env}/metadata",  # Changed path to include environment
                     secret={"initialized": True},
-                    mount_point=env_path,
+                    mount_point=base_path,  # Use base_path as mount_point instead of env_path
                 )
                 logger.info(f"Initialized environment path: {env_path}")
 
