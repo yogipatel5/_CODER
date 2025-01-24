@@ -17,8 +17,6 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 
-from core.vault import Vault
-
 # Load environment variables
 load_dotenv()
 
@@ -34,20 +32,6 @@ try:
 
 except FileNotFoundError:
     pass
-
-if project_config.get("env", {}).get("use_vault", True):
-    vault_addr = os.getenv("VAULT_ADDR")
-    vault_token = os.getenv("VAULT_TOKEN")
-    if vault_addr and vault_token:
-        vault = Vault(vault_path=vault_addr, vault_token=vault_token)
-    else:
-        logging.warning(
-            f"VAULT_ADDR and/or VAULT_TOKEN environment variables not set in project "
-            f"{project_config.get('project_name')}"
-        )
-        vault = None
-else:
-    vault = None
 
 LOGFIRE_TOKEN = os.getenv("LOGFIRE_TOKEN", "VKB9cfmnDYRp1n5dGh362g5CmYwhrGgSnFgD5YkK5T6x")
 # TODO: Need to add logfire logging configuration to LOGGING setting
@@ -120,12 +104,12 @@ INSTALLED_APPS = [
     "alfie.apps.AlfieConfig",
     "core.apps.CoreConfig",
     "network.apps.NetworkConfig",
-    "projects.apps.ProjectsConfig",
+    # "projects.apps.ProjectsConfig",
     "system.apps.SystemConfig",
     "notion.apps.NotionConfig",
     "network.pfsense.apps.PfsenseConfig",
     # "projects.github.apps.GithubConfig",
-    # "vault.apps.VaultConfig",
+    "projects.vault.apps.VaultConfig",
     # Third party apps
     "django_celery_beat",
 ]

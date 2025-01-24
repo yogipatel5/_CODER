@@ -50,3 +50,5 @@ ENV/
 htmlcov/.DS_Store
 
 .conda
+.env.dev
+.env.prod
