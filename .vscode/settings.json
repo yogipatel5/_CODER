@@ -42,5 +42,8 @@
     ".env.sample": true,
     "notion/management/__pycache__": true
   },
-  "hide-files.files": []
+  "hide-files.files": [],
+  "[properties]": {
+    "editor.defaultFormatter": "trunk.io"
+  }
 }
