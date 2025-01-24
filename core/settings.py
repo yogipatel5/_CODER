@@ -84,6 +84,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Get Django core settings from Vault
 django_settings = vault_settings.get("django", {})
+PROXMOX_CREDS = vault_settings.get("proxmox", {})
 SECRET_KEY = django_settings.get("secret_key", os.getenv("DJANGO_SECRET_KEY", ""))
 DEBUG = django_settings.get("debug", os.getenv("DJANGO_DEBUG", "True")).lower() == "true"
 ALLOWED_HOSTS = django_settings.get(
@@ -108,13 +109,19 @@ INSTALLED_APPS = [
     "network.pfsense.apps.PfsenseConfig",
     "system.apps.SystemConfig",
     "network.apps.NetworkConfig",
+    "network.proxmox.apps.ProxmoxConfig",
     "django_celery_beat",
     # Third party apps
 ]
 
-# Notion Configuration
-# Temporarily disabled until models are set up
+# Notion settings
+# TODO: Move hardcoded IDs to environment variables
+# TODO: Add validation for required Notion settings
+# TODO: Add configuration for rate limiting
+# TODO: Add separate settings for different environments
+
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
+NOTION_PROJECT_PAGE_ID = "1769167955c8815f925ee2860e01f786"
 if not NOTION_API_KEY:
     logging.warning("NOTION_API_KEY environment variable not set")
 
@@ -162,6 +169,9 @@ DATABASES = {
         "PASSWORD": db_settings.get("password", os.getenv("POSTGRES_PASSWORD")),
         "HOST": db_settings.get("host", os.getenv("POSTGRES_HOST")),
         "PORT": db_settings.get("port", os.getenv("POSTGRES_PORT")),
+        "OPTIONS": {
+            "client_encoding": "UTF8",
+        },
     }
 }
 

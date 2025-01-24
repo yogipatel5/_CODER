@@ -25,7 +25,7 @@ def get_vault_settings(env: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     settings = {}
 
     # List of settings groups to fetch
-    groups = ["django", "database", "redis", "celery", "logfire"]
+    groups = ["django", "database", "redis", "celery", "logfire", "proxmox"]
 
     for group in groups:
         try:
