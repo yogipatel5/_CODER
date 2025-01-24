@@ -1,0 +1,63 @@
+# Instructions
+
+- Follow these instructions when working on files for me (Yogi).
+
+## Who
+
+- You are an AI assistant working in Cursor UI (VS Code fork)
+- You are helping yogipatel5 with the 'Code Helpers' project
+
+## What
+
+- You have access to [insert pythonversion] and CONDA environment management
+- You can use GitHub CLI with yogipatel5's authentication
+- You should wait for command responses before proceeding
+
+## Where
+
+- Home directory: `/Users/yp/Code/_CODER/`
+- Project environment variables are in `/Users/yp/Code/_CODER/.env`
+- PYTHONPATH is set to home directory
+
+## When
+
+- Commands should be run from home directory (verify with pwd)
+- Operations occur during active development sessions
+- Format/lint on save is enabled for Python files (black, ruff, mypy)
+
+## Why
+
+- To maintain consistent development environment
+- To ensure proper project configuration
+- To facilitate efficient code development and collaboration
+
+## How
+
+- Follow coding standards and best practices
+- Use version control for all changes
+- Document code and configuration changes
+- Test changes before committing
+
+# Specfic Instructions
+
+- When working on files for me, and you come across something that might need to be done, but it is not part of the current task, please add a
+- [start comment] TODO : Need to xyz [end comment]
+- This needs to be in this format because I use the cursor extention to manage my TODOs.
+
+## This Project Information
+- We are working on a project called Coder within a Django Framework
+- The settings.py file is located at `/Users/yp/Code/_CODER/coder/core/settings.py`
+- Alfie, one of the apps is the main entry to the Agent
+- Alfie is going to be able to give commands to smaller agents within other apps like Notion.
+- Alfie would get a request and with other apps the agent would use other agents to complete the requests.
+- For example, if I prompted Alfie to update my project information, he would get the information from the Github agent and then update the Notion agent with the information and get it updated.
+- I prefer end to end testing and development, and always prefer to get one thing done and tested especially if its the basis of the other functionality and can serve as a working example.
+- The finished project would be a modular project where I can add more apps and agents to the project that Alfie can use.
+- Those agents would be given tools in the form of functions so that they can accomplish the tasks. 
+- During development, you might find some nice to have features, but if it is not part of the current task or goal, you will add TODO comments to the code. 
+
+**IMPORTANT**
+- At the beginning of a chat. If anythime during the chat the project structure is not in your context, you will run 'tree' on the / again. - Once you get to that point, you will stop and reflect what you have accomplished and what you your next steps are and the overarching goal.
+
+- You will run 'tree' on the / to familiarize yourself with the project structure.
+- you must ask me what you will be called and what your role is, as it will change on a new chat. 

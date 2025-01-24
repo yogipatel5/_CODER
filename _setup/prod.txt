@@ -1,0 +1,11 @@
+# Production dependencies
+-r base.txt
+-r ai.txt
+-r tools.txt
+gunicorn>=22.0.0
+psycopg2-binary==2.9.9
+celery>=5.3.6
+django-celery-beat>=2.5.0
+redis>=5.0.1
+notion-client>=2.2.1
+hvac

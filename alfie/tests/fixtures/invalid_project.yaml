@@ -1,0 +1,26 @@
+# Invalid project configuration for testing error handling
+project_name: invalid_project
+# Missing required 'structure' field
+
+# Invalid YAML syntax
+git:
+  create_repo: true
+  branches:
+    - main
+    develop  # Missing hyphen
+  invalid-indent:
+   wrong-level
+
+# Invalid path
+path: /nonexistent/path/that/does/not/exist
+
+# Invalid conda configuration
+conda:
+  create_conda_env: true
+  python_version: invalid_version
+
+# Invalid templates configuration
+templates:
+  copy_all: not_a_boolean
+  files:
+    - nonexistent/template.txt 

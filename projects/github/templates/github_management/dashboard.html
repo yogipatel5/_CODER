@@ -1,0 +1,132 @@
+{% extends "github_management/base.html" %} {% block title %}GitHub Management
+Dashboard{% endblock title %} {% block content %}
+<div class="row">
+  <div class="col-12">
+    <h1 class="mb-4">GitHub Management Dashboard</h1>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Repository Stats -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Repositories</h5>
+        <p class="card-text display-4">{{ repository_count }}</p>
+        <a
+          href="{% url 'github_management:repository_list' %}"
+          class="btn btn-primary"
+          >View All</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Stats -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Active Branches</h5>
+        <p class="card-text display-4">{{ branch_count }}</p>
+        <a
+          href="{% url 'github_management:branch_list' %}"
+          class="btn btn-primary"
+          >View All</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Commit Stats -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Recent Commits</h5>
+        <p class="card-text display-4">{{ commit_count }}</p>
+        <a
+          href="{% url 'github_management:commit_list' %}"
+          class="btn btn-primary"
+          >View All</a
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Push Stats -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Push Operations</h5>
+        <p class="card-text display-4">{{ push_count }}</p>
+        <a
+          href="{% url 'github_management:push_list' %}"
+          class="btn btn-primary"
+          >View All</a
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Recent Activity -->
+  <div class="col-md-8 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Recent Activity</h5>
+      </div>
+      <div class="card-body">
+        {% if recent_activity %}
+        <ul class="list-group list-group-flush">
+          {% for activity in recent_activity %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ activity.type }}</strong>: {{ activity.description }}
+              </div>
+              <small class="text-muted"
+                >{{ activity.timestamp|timesince }} ago</small
+              >
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">No recent activity</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="col-md-4 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Quick Actions</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a
+            href="{% url 'github_management:repository_create' %}"
+            class="btn btn-primary"
+          >
+            Create Repository
+          </a>
+          <a
+            href="{% url 'github_management:branch_create' %}"
+            class="btn btn-primary"
+          >
+            Create Branch
+          </a>
+          <a
+            href="{% url 'github_management:push_create' %}"
+            class="btn btn-primary"
+          >
+            New Push Operation
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

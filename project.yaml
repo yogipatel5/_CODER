@@ -1,0 +1,124 @@
+project_name: coder
+description: This is the coder project - it houses a lot of the API and agents for Yogi's Projects and day to day tasks.
+# Add dependencies section to manage project requirements
+dependencies:
+  pip_requirements: true 
+  dev_requirements: true  
+  
+conda:
+  create_conda_env: true
+  python_version: 3.12
+  # Add conda-specific configurations
+  channels:
+    - conda-forge
+    - defaults
+  env_name: "${project_name}"  # Use project name as environment name
+
+notion:
+  project_page_id: 1769167955c8815f925ee2860e01f786
+  project_page_url: https://www.notion.so/yp1016/CODER-Project-1769167955c8815f925ee2860e01f786
+github:
+  create_repo: true
+  repo_name: _CODER
+  repo_description: A collection of tools for developing on my Macbook Studio and Macbook Pro
+  repo_visibility: private
+  repo_topics: []
+  repo_default_branch: main
+  repo_branches:
+    - develop:
+  repo_commit_message: "Initial project setup - created by coder"
+  repo_user: yogipatel5
+  # Add workflow configurations
+  workflows:
+    create_ci: true  # Creates basic GitHub Actions workflow
+    create_pr_template: true  # Adds pull request template
+  
+path: ~/Code/Projects
+
+templates:
+  copy_all: true
+  files:
+    - .cursorrules
+    - .env
+    - .vscode/settings.json
+  # Add additional important template files
+  additional_files:
+    - pyproject.toml  # For modern Python packaging
+    - .pre-commit-config.yaml  # For pre-commit hooks
+    - CHANGELOG.md  # For tracking changes
+    - .editorconfig  # For consistent coding styles
+
+structure:
+  directories:
+    - tests
+    - docs
+    # Add more standard directories
+    - src/${project_name}  # Source code directory
+    - scripts  # Utility scripts
+    - config  # Configuration files
+  files:
+    - README.md
+    - requirements.txt
+    - .gitignore
+    # Add more standard files
+    - setup.py  # For package installation
+    - Makefile  # For common commands
+    - docs/conf.py  # For documentation
+    - tests/__init__.py
+    - tests/conftest.py  # For pytest configuration
+
+git:
+  create_repo: true
+  initial_branch: main
+  other_branches: [develop,staging]
+  commit_message: "Initial project setup - created by coder"
+  # Add git hooks configuration
+  hooks:
+    - pre-commit
+    - pre-push
+  ignore_patterns:
+    - "*.pyc"
+    - "__pycache__"
+    - ".env"
+    - ".venv"
+    - "*.egg-info"
+
+# Add VSCode specific settings
+vscode:
+  create_settings: true
+  extensions:
+    - ms-python.python
+    - ms-python.vscode-pylance
+    - ms-python.black-formatter
+    - charliermarsh.ruff
+    - tamasfe.even-better-toml
+
+# Add testing configuration
+testing:
+  framework: pytest
+  coverage: true
+  create_basic_tests: true
+
+# Add documentation configuration
+documentation:
+  framework: mkdocs  # or sphinx
+  create_basic_docs: true
+
+env:
+  vault:
+    - enable: true
+    - environments:
+      - name: dev
+      - name: prod
+  create_env: true
+  variables:
+    - name: VAULT_ADDR
+      value: env.VAULT_ADDR
+    - name: VAULT_TOKEN
+      value: env.VAULT_TOKEN
+    # Add common development variables
+    - name: PYTHONPATH
+      value: "${HOME}/Code/Projects/${project_name}/src"
+    - name: PYTHON_ENV
+      value: development
+

@@ -1,0 +1,7 @@
+# Minimal project configuration with only required fields
+project_name: minimal_project
+structure:
+  directories:
+    - src
+  files:
+    - README.md 

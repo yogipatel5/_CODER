@@ -1,0 +1,241 @@
+{% extends "github_management/base.html" %} {% block title %}{% if repository
+%}Edit{% else %}Create{% endif %} Repository - GitHub Management{% endblock
+title %} {% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <h1>{% if repository %}Edit{% else %}Create{% endif %} Repository</h1>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <form method="post" class="needs-validation" novalidate>
+          {% csrf_token %} {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="{{ form.name.id_for_label }}" class="form-label"
+              >Repository Name</label
+            >
+            <input
+              type="text"
+              class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+              id="{{ form.name.id_for_label }}"
+              name="{{ form.name.name }}"
+              value="{{ form.name.value|default:'' }}"
+              required
+              {%
+              if
+              repository
+              %}readonly{%
+              endif
+              %}
+            />
+            {% if form.name.errors %}
+            <div class="invalid-feedback">
+              {% for error in form.name.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %} {% if form.name.help_text %}
+            <div class="form-text">{{ form.name.help_text }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label"
+              >Description</label
+            >
+            <textarea
+              class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+              id="{{ form.description.id_for_label }}"
+              name="{{ form.description.name }}"
+              rows="3"
+            >
+{{ form.description.value|default:'' }}</textarea
+            >
+            {% if form.description.errors %}
+            <div class="invalid-feedback">
+              {% for error in form.description.errors %} {{ error }} {% endfor
+              %}
+            </div>
+            {% endif %} {% if form.description.help_text %}
+            <div class="form-text">{{ form.description.help_text }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.visibility.id_for_label }}" class="form-label"
+              >Visibility</label
+            >
+            <select
+              class="form-select {% if form.visibility.errors %}is-invalid{% endif %}"
+              id="{{ form.visibility.id_for_label }}"
+              name="{{ form.visibility.name }}"
+            >
+              {% for value, label in form.visibility.field.choices %}
+              <option
+                value="{{ value }}"
+                {%
+                if
+                form.visibility.value=""
+                ="value"
+                %}selected{%
+                endif
+                %}
+              >
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            {% if form.visibility.errors %}
+            <div class="invalid-feedback">
+              {% for error in form.visibility.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %} {% if form.visibility.help_text %}
+            <div class="form-text">{{ form.visibility.help_text }}</div>
+            {% endif %}
+          </div>
+
+          {% if not repository %}
+          <div class="mb-3">
+            <label for="{{ form.template.id_for_label }}" class="form-label"
+              >Template (Optional)</label
+            >
+            <select
+              class="form-select {% if form.template.errors %}is-invalid{% endif %}"
+              id="{{ form.template.id_for_label }}"
+              name="{{ form.template.name }}"
+            >
+              <option value="">No template</option>
+              {% for value, label in form.template.field.choices %}
+              <option
+                value="{{ value }}"
+                {%
+                if
+                form.template.value=""
+                ="value"
+                %}selected{%
+                endif
+                %}
+              >
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            {% if form.template.errors %}
+            <div class="invalid-feedback">
+              {% for error in form.template.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %} {% if form.template.help_text %}
+            <div class="form-text">{{ form.template.help_text }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label
+              for="{{ form.initial_branch.id_for_label }}"
+              class="form-label"
+              >Initial Branch</label
+            >
+            <input
+              type="text"
+              class="form-control {% if form.initial_branch.errors %}is-invalid{% endif %}"
+              id="{{ form.initial_branch.id_for_label }}"
+              name="{{ form.initial_branch.name }}"
+              value="{{ form.initial_branch.value|default:'main' }}"
+            />
+            {% if form.initial_branch.errors %}
+            <div class="invalid-feedback">
+              {% for error in form.initial_branch.errors %} {{ error }} {%
+              endfor %}
+            </div>
+            {% endif %} {% if form.initial_branch.help_text %}
+            <div class="form-text">{{ form.initial_branch.help_text }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <div class="d-flex justify-content-between">
+            <a
+              href="{% url 'github_management:repository_list' %}"
+              class="btn btn-secondary"
+              >Cancel</a
+            >
+            <button type="submit" class="btn btn-primary">
+              {% if repository %}Save Changes{% else %}Create Repository{% endif
+              %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Help</h5>
+      </div>
+      <div class="card-body">
+        <h6>Repository Name</h6>
+        <p class="text-muted small">
+          Choose a unique name for your repository. It should be lowercase, with
+          no spaces.
+        </p>
+
+        <h6>Description</h6>
+        <p class="text-muted small">
+          A short description of your repository. This will be displayed on your
+          repository's main page.
+        </p>
+
+        <h6>Visibility</h6>
+        <p class="text-muted small">
+          <strong>Public:</strong> Anyone can see the repository. You choose who
+          can commit.<br />
+          <strong>Private:</strong> You choose who can see and commit to this
+          repository.
+        </p>
+
+        {% if not repository %}
+        <h6>Template</h6>
+        <p class="text-muted small">
+          Choose a template to initialize your repository with some basic files
+          and directories.
+        </p>
+
+        <h6>Initial Branch</h6>
+        <p class="text-muted small">
+          The name of the default branch. Common choices are 'main' or 'master'.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %} {% block extra_js %}
+<script>
+  // Form validation
+  (function () {
+    "use strict";
+    const forms = document.querySelectorAll(".needs-validation");
+    Array.from(forms).forEach((form) => {
+      form.addEventListener(
+        "submit",
+        (event) => {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add("was-validated");
+        },
+        false,
+      );
+    });
+  })();
+</script>
+{% endblock extra_js %}

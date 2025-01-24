@@ -1,0 +1,59 @@
+project_name: my_project
+description: A sample project description
+conda: 
+  create_conda_env: true
+  python_version: 3.12
+  location: ~/Code/[project_folder]/.conda
+  
+github:
+  create_repo: true
+  repo_name: _CODER
+  repo_description: A collection of tools for developing on my Macbook Studio and Macbook Pro
+  repo_visibility: private
+  repo_topics: []
+  repo_default_branch: main
+  repo_branches:
+    - develop
+  repo_commit_message: "Initial project setup - created by coder"
+  repo_user: yogipatel5
+
+path: ~/Code/Projects  # default project location
+
+templates:
+  copy_all: true  # if false, only copy specified files
+  files:
+    - .cursorrules
+    - .env
+    - .vscode/settings.json
+    - .github/pull_request_template.md
+
+# Additional project structure to create
+structure:
+  directories:
+    - tests
+    - docs
+    - .github
+  files:
+    - README.md
+    - requirements.txt
+    - .gitignore
+
+# Git settings
+git:
+  create_repo: true
+  initial_branch: main
+  other_branches: [develop,staging]
+  commit_message: "Initial project setup - created by coder" 
+
+vault:
+  create_vault_contrainer: false
+  
+env:
+  create_env: true
+  variables:
+    - name: VAULT_ADDR
+      value: env.VAULT_ADDR
+    - name: VAULT_TOKEN
+      value: env.VAULT_TOKEN
+  
+

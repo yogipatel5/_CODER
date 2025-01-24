@@ -1,0 +1,68 @@
+[project]
+name = "notion-ai-agent"
+version = "0.1.0"
+description = "AI-powered Notion agent using Pydantic"
+requires-python = ">=3.11"
+dependencies = [
+  "notion-client>=2.0.0",
+  "pydantic>=2.0.0",
+  "pydantic-ai>=0.0.16",
+  "click>=8.0.0",
+  "python-dotenv>=1.0.0",
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.21.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+DJANGO_SETTINGS_MODULE = "core.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "-v --reuse-db --strict-markers"
+norecursedirs = [
+  ".*",
+  "build",
+  "dist",
+  "CVS",
+  "_darcs",
+  "{arch}",
+  "*.egg",
+  "venv",
+  "env",
+  "virtualenv",
+  ".git",
+  ".tox",
+  ".pytest_cache",
+  "__pycache__",
+]
+markers = [
+  "unit: marks unit tests that don't require external services",
+  "integration: marks tests that require external services (deselect with '-m \"not integration\"')",
+  "git: marks tests that interact with git",
+  "github: marks tests that interact with GitHub API",
+  "yaml: marks tests for YAML configuration",
+  "tools: marks tests for code tools",
+]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/build
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = []
+per-file-ignores = {"__init__.py" = ["F401"]}
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"

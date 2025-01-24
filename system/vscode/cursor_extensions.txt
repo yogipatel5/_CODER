@@ -1,0 +1,11 @@
+anysphere.pyright
+equinusocio.vsc-material-theme-icons
+eriklynd.json-tools
+ms-python.debugpy
+ms-python.python
+ms-python.vscode-pylance
+roonie007.hide-files
+tal7aouy.theme
+trunk.io
+usernamehw.errorlens
+visualstudioexptteam.intellicode-api-usage-examples
