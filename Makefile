@@ -34,13 +34,12 @@ up: ## Start Docker containers in detached mode
 
 down: ## Stop Docker containers
 	docker compose down
-
 build: ## Build Docker images
 	docker compose build
 
 buildrun: ## Build Docker images and run containers
 	docker compose build && docker compose up -d
-
+	
 # Docker logs
 logs: ## View all Docker container logs
 	docker compose logs -f
