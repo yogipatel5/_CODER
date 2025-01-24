@@ -2,7 +2,7 @@
 """Models for managing Celery tasks."""
 from django.db import models
 
-from ..managers.task import TaskManager
+from notion.managers.task import TaskManager
 
 
 class Task(models.Model):
@@ -35,6 +35,10 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     # Manager
+    # TODO: Add task priority field and handling
+    # TODO: Add task dependencies tracking
+    # TODO: Move task status logic to TaskManager
+    # TODO: Add task history tracking
     objects = TaskManager()
 
     def __str__(self):

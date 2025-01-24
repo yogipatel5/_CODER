@@ -1,4 +1,5 @@
 """Notion API client implementation."""
+
 from typing import Dict, List
 
 from django.conf import settings
@@ -8,6 +9,10 @@ from notion_client import Client
 class NotionClient:
     """Client for interacting with the Notion API."""
 
+    # TODO: Implement proper rate limiting mechanism
+    # TODO: Add retry logic for API calls
+    # TODO: Add caching for frequently accessed resources
+    # TODO: Move API response parsing to separate service layer
     def __init__(self):
         """Initialize the Notion client."""
         self.client = Client(auth=settings.NOTION_API_KEY)
@@ -82,6 +87,17 @@ class NotionClient:
             Dict containing the response data
         """
         return self.client.blocks.children.append(block_id=block_id, children=children)
+
+    def get_database(self, database_id: str) -> Dict:
+        """Get database metadata."""
+        return self.client.databases.retrieve(database_id)
+
+    def query_database(self, database_id: str, filter_params: Dict = None) -> List[Dict]:
+        """Query a database to get its rows."""
+        response = self.client.databases.query(
+            database_id, **({} if filter_params is None else {"filter": filter_params})
+        )
+        return response.get("results", [])
 
 
 if __name__ == "__main__":
