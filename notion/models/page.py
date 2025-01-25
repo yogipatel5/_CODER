@@ -37,6 +37,8 @@ class Page(models.Model):
     blocks = JSONField(default=list, help_text="Page content blocks from Notion")  # New field for content
 
     class Meta:
+        verbose_name = "Notion Page"
+        verbose_name_plural = "Notion Pages"
         indexes = [models.Index(fields=["embedding"], name="notion_page_embedding_idx", opclasses=["vector_ops"])]
 
     def __str__(self):
@@ -56,7 +58,3 @@ class Page(models.Model):
         if not self.title and self.raw_properties:
             self.title = self.plain_title
         super().save(*args, **kwargs)
-
-    class Meta:
-        verbose_name = "Notion Page"
-        verbose_name_plural = "Notion Pages"

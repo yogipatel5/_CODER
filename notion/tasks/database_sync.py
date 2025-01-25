@@ -46,16 +46,6 @@ def sync_database(self, database_id: str, title: str):
             },
         )
 
-        # Generate embeddings for each database row
-        for row in database_items:
-            content = extract_text_content(row)  # Implement text extraction
-            embedding = generate_embedding(content)
-
-            # Store in your database model
-            db.rows = [{**row, "embedding": embedding, "content": content} for row in database_items]
-        logger.info(
-            f"{'Created' if created else 'Updated'} database: {title} ({db.id}) with {len(database_items)} rows"
-        )
         return {"database_id": database_id, "rows_count": len(database_items)}
     except Exception as exc:
         logger.error(f"Error syncing database {title} ({database_id}): {exc}", exc_info=True)

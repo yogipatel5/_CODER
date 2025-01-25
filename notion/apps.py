@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 from django.apps import AppConfig

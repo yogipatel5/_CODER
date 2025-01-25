@@ -11,3 +11,14 @@ Actions:
 - Need a way to update the Cloudflare DNS records for the domains.
 - Need a task to keep the Cloudflare DNS records up to date with the domains and the services.
 - Will need a model to store the important Cloudflare DNS records for the domains and the services.
+
+This is stored in VAULT
+declare it in settings.py and import in the app
+dev/cloudflare
+ACCOUNT_ID ***********
+API_TOKEN ***********
+
+Exmaple: 
+curl -X GET "https://api.cloudflare.com/client/v4/accounts/[ACCOUNT_ID]/tokens/verify" \
+     -H "Authorization: Bearer [API_TOKEN]" \
+     -H "Content-Type:application/json"
