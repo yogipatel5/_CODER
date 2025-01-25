@@ -76,5 +76,5 @@ install-reqs:
 	docker compose -f _setup/docker-compose.yml run --rm celery pip install -r _setup/requirements.txt
 	docker compose -f _setup/docker-compose.yml run --rm celery-beat pip install -r _setup/requirements.txt
 	docker compose -f _setup/docker-compose.yml run --rm redis pip install -r _setup/requirements.txt
-	pip install -r requirements.txt
+	pip install -r _setup/requirements.txt
 	
