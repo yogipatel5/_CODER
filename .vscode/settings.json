@@ -42,8 +42,18 @@
     ".env.sample": true,
     "notion/management/__pycache__": true
   },
-  "hide-files.files": [],
   "[properties]": {
     "editor.defaultFormatter": "trunk.io"
-  }
+  },
+  "workbench.iconTheme": "material-icon-theme",
+  "material-icon-theme.folders.associations": {
+    "notion": "notion",
+    "nginxproxy": "nginxproxy",
+    "management": "src",
+    "cloudflare": "cloudflareicon",
+    "agents": "godot",
+    "vault": "vault"
+  },
+  "explorer.autoReveal": "focusNoScroll",
+  "explorer.compactFolders": true
 }
