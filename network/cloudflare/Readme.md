@@ -15,10 +15,10 @@ Actions:
 This is stored in VAULT
 declare it in settings.py and import in the app
 dev/cloudflare
-ACCOUNT_ID ***********
-API_TOKEN ***********
+ACCOUNT_ID \***\*\*\*\*\*\***
+API_TOKEN \***\*\*\*\*\*\***
 
-Exmaple: 
+Exmaple:
 curl -X GET "https://api.cloudflare.com/client/v4/accounts/[ACCOUNT_ID]/tokens/verify" \
-     -H "Authorization: Bearer [API_TOKEN]" \
-     -H "Content-Type:application/json"
+ -H "Authorization: Bearer [API_TOKEN]" \
+ -H "Content-Type:application/json"

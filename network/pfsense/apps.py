@@ -21,7 +21,7 @@ class PfsenseConfig(AppConfig):
                     try:
                         full_module_path = f"network.pfsense.models.{module_name}"
                         importlib.import_module(full_module_path)
-                    except ImportError as e:
+                    except ImportError:
                         # Handle specific import errors or log them
                         pass
 
@@ -33,6 +33,6 @@ class PfsenseConfig(AppConfig):
                     try:
                         full_module_path = f"network.pfsense.tasks.{module_name}"
                         importlib.import_module(full_module_path)
-                    except ImportError as e:
+                    except ImportError:
                         # Handle specific import errors or log them
                         pass

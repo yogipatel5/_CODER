@@ -2,9 +2,9 @@ project_name: coder
 description: This is the coder project - it houses a lot of the API and agents for Yogi's Projects and day to day tasks.
 # Add dependencies section to manage project requirements
 dependencies:
-  pip_requirements: true 
-  dev_requirements: true  
-  
+  pip_requirements: true
+  dev_requirements: true
+
 conda:
   create_conda_env: true
   python_version: 3.12
@@ -12,7 +12,7 @@ conda:
   channels:
     - conda-forge
     - defaults
-  env_name: "${project_name}"  # Use project name as environment name
+  env_name: "${project_name}" # Use project name as environment name
 
 notion:
   project_page_id: 1769167955c8815f925ee2860e01f786
@@ -26,13 +26,13 @@ github:
   repo_default_branch: main
   repo_branches:
     - develop:
-  repo_commit_message: "Initial project setup - created by coder"
+  repo_commit_message: Initial project setup - created by code
   repo_user: yogipatel5
   # Add workflow configurations
   workflows:
-    create_ci: true  # Creates basic GitHub Actions workflow
-    create_pr_template: true  # Adds pull request template
-  
+    create_ci: true # Creates basic GitHub Actions workflow
+    create_pr_template: true # Adds pull request template
+
 path: ~/Code/Projects
 
 templates:
@@ -43,44 +43,44 @@ templates:
     - .vscode/settings.json
   # Add additional important template files
   additional_files:
-    - pyproject.toml  # For modern Python packaging
-    - .pre-commit-config.yaml  # For pre-commit hooks
-    - CHANGELOG.md  # For tracking changes
-    - .editorconfig  # For consistent coding styles
+    - pyproject.toml # For modern Python packaging
+    - .pre-commit-config.yaml # For pre-commit hooks
+    - CHANGELOG.md # For tracking changes
+    - .editorconfig # For consistent coding styles
 
 structure:
   directories:
     - tests
     - docs
     # Add more standard directories
-    - src/${project_name}  # Source code directory
-    - scripts  # Utility scripts
-    - config  # Configuration files
+    - src/${project_name} # Source code directory
+    - scripts # Utility scripts
+    - config # Configuration files
   files:
     - README.md
     - requirements.txt
     - .gitignore
     # Add more standard files
-    - setup.py  # For package installation
-    - Makefile  # For common commands
-    - docs/conf.py  # For documentation
+    - setup.py # For package installation
+    - Makefile # For common commands
+    - docs/conf.py # For documentation
     - tests/__init__.py
-    - tests/conftest.py  # For pytest configuration
+    - tests/conftest.py # For pytest configuration
 
 git:
   create_repo: true
   initial_branch: main
-  other_branches: [develop,staging]
-  commit_message: "Initial project setup - created by coder"
+  other_branches: [develop, staging]
+  commit_message: Initial project setup - created by coder
   # Add git hooks configuration
   hooks:
     - pre-commit
     - pre-push
   ignore_patterns:
     - "*.pyc"
-    - "__pycache__"
-    - ".env"
-    - ".venv"
+    - __pycache__
+    - .env
+    - .venv
     - "*.egg-info"
 
 # Add VSCode specific settings
@@ -101,15 +101,15 @@ testing:
 
 # Add documentation configuration
 documentation:
-  framework: mkdocs  # or sphinx
+  framework: mkdocs # or sphinx
   create_basic_docs: true
 
 env:
   vault:
     - enable: true
     - environments:
-      - name: dev
-      - name: prod
+        - name: dev
+        - name: prod
   create_env: true
   variables:
     - name: VAULT_ADDR
@@ -121,4 +121,3 @@ env:
       value: "${HOME}/Code/Projects/${project_name}/src"
     - name: PYTHON_ENV
       value: development
-

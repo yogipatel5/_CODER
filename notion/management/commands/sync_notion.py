@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from notion.services.sync_service import NotionSyncService
+from notion.services.sync import NotionSyncService
 from notion.tasks.sync import sync_notion_content
 
 

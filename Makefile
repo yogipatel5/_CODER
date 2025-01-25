@@ -30,42 +30,51 @@ superuser: ## Create Django superuser in Docker
 
 # Docker commands
 up: ## Start Docker containers in detached mode
-	docker compose up -d
+	docker compose -f _setup/docker-compose.yml up -d
 
 down: ## Stop Docker containers
-	docker compose down
+	docker compose -f _setup/docker-compose.yml down
+
 build: ## Build Docker images
-	docker compose build
+	docker compose -f _setup/docker-compose.yml build
 
 buildrun: ## Build Docker images and run containers
-	docker compose build && docker compose up -d
-	
+	docker compose -f _setup/docker-compose.yml build && docker compose -f _setup/docker-compose.yml up -d
+
 # Docker logs
 logs: ## View all Docker container logs
-	docker compose logs -f
+	docker compose -f _setup/docker-compose.yml logs -f
 
 logs-web: ## View web container logs
-	docker compose logs -f web
+	docker compose -f _setup/docker-compose.yml logs -f web
 
 logs-celery: ## View celery container logs
-	docker compose logs -f celery
+	docker compose -f _setup/docker-compose.yml logs -f celery
 
 logs-beat: ## View celery-beat container logs
-	docker compose logs -f celery-beat
+	docker compose -f _setup/docker-compose.yml logs -f celery-beat
 
 logs-redis: ## View redis container logs
-	docker compose logs -f redis
+	docker compose -f _setup/docker-compose.yml logs -f redis
 
 ps: ## List running Docker containers
-	docker compose ps
+	docker compose -f _setup/docker-compose.yml ps
 
 clean: ## Remove Docker volumes and Python cache files
-	docker compose down -v
+	docker compose -f _setup/docker-compose.yml down -v
 	find . -type d -name "__pycache__" -exec rm -r {} +
 	find . -type f -name "*.pyc" -delete
 
 restart:
-	docker compose restart
+	docker compose -f _setup/docker-compose.yml restart
 
 enter-shell:
-	docker compose run --rm web bash
+	docker compose -f _setup/docker-compose.yml run --rm web bash
+
+install-reqs:
+	docker compose -f _setup/docker-compose.yml run --rm web pip install -r _setup/requirements.txt
+	docker compose -f _setup/docker-compose.yml run --rm celery pip install -r _setup/requirements.txt
+	docker compose -f _setup/docker-compose.yml run --rm celery-beat pip install -r _setup/requirements.txt
+	docker compose -f _setup/docker-compose.yml run --rm redis pip install -r _setup/requirements.txt
+	pip install -r requirements.txt
+	
