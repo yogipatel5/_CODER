@@ -4,7 +4,7 @@ A Django app for integrating with Notion and processing Notion pages with AI age
 
 ## Directory Structure
 
-```
+```tree
 notion/
 ├── api/                    # Notion API integration
 │   ├── __init__.py

@@ -1,8 +1,8 @@
-### Quote / Callout
+# Quote / Callout
 
 > This is a callout block with **bold text**
 
-### Table
+## Table
 
 | Column 1 | Column 2 |
 | -------- | -------- |
