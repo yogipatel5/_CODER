@@ -35,3 +35,4 @@ actions:
   enabled:
     - trunk-fmt-pre-commit
     - trunk-upgrade-available
+    - git-lfs
