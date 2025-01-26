@@ -44,14 +44,8 @@ class Command(BaseCommand):
             secret = vault_service.read_secret(env=env, name=name)
 
             if secret:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Secret '{name}' from {env} environment:\n{secret}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"Secret '{name}' from {env} environment:\n{secret}"))
             else:
-                self.stderr.write(
-                    self.style.ERROR(f"Failed to read secret '{name}' from {env} environment")
-                )
+                self.stderr.write(self.style.ERROR(f"Failed to read secret '{name}' from {env} environment"))
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Error: {str(e)}"))
