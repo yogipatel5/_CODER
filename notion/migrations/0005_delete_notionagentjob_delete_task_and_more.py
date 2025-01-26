@@ -6,49 +6,49 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notion', '0004_page'),
+        ("notion", "0004_page"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='NotionAgentJob',
+            name="NotionAgentJob",
         ),
         migrations.DeleteModel(
-            name='Task',
+            name="Task",
         ),
         migrations.AddField(
-            model_name='page',
-            name='last_synced_at',
+            model_name="page",
+            name="last_synced_at",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='page',
-            name='parent_id',
+            model_name="page",
+            name="parent_id",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='page',
-            name='parent_type',
-            field=models.CharField(default='workspace', max_length=50),
+            model_name="page",
+            name="parent_type",
+            field=models.CharField(default="workspace", max_length=50),
         ),
         migrations.AddField(
-            model_name='page',
-            name='public_url',
+            model_name="page",
+            name="public_url",
             field=models.URLField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='page',
-            name='raw_properties',
+            model_name="page",
+            name="raw_properties",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='page',
-            name='cover',
+            model_name="page",
+            name="cover",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='page',
-            name='icon',
+            model_name="page",
+            name="icon",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

@@ -6,26 +6,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notion', '0003_alter_notionagentjob_parent_page_id'),
+        ("notion", "0003_alter_notionagentjob_parent_page_id"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Page',
+            name="Page",
             fields=[
-                ('id', models.CharField(max_length=255, primary_key=True, serialize=False)),
-                ('created_time', models.DateTimeField()),
-                ('last_edited_time', models.DateTimeField()),
-                ('cover', models.TextField(blank=True, null=True)),
-                ('icon', models.CharField(blank=True, max_length=50, null=True)),
-                ('archived', models.BooleanField(default=False)),
-                ('in_trash', models.BooleanField(default=False)),
-                ('title', models.CharField(max_length=255)),
-                ('url', models.URLField()),
+                ("id", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("created_time", models.DateTimeField()),
+                ("last_edited_time", models.DateTimeField()),
+                ("cover", models.TextField(blank=True, null=True)),
+                ("icon", models.CharField(blank=True, max_length=50, null=True)),
+                ("archived", models.BooleanField(default=False)),
+                ("in_trash", models.BooleanField(default=False)),
+                ("title", models.CharField(max_length=255)),
+                ("url", models.URLField()),
             ],
             options={
-                'verbose_name': 'Notion Page',
-                'verbose_name_plural': 'Notion Pages',
+                "verbose_name": "Notion Page",
+                "verbose_name_plural": "Notion Pages",
             },
         ),
     ]

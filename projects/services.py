@@ -16,9 +16,7 @@ def create_project_structure(config: Dict[str, Any]) -> str:
     """Create the project directory structure based on the configuration."""
     try:
         # Get project path and name
-        base_path = os.path.expanduser(
-            config.get("path", os.path.expanduser("~/Code/Projects"))
-        )
+        base_path = os.path.expanduser(config.get("path", os.path.expanduser("~/Code/Projects")))
         project_name = config["project_name"]
         project_path = str(os.path.join(base_path, project_name))
 

@@ -213,9 +213,7 @@ class GitService:
         except GitCommandError as e:
             raise GitError(str(e))
 
-    def push(
-        self, remote: str = "origin", branch: Optional[str] = None, force: bool = False
-    ) -> None:
+    def push(self, remote: str = "origin", branch: Optional[str] = None, force: bool = False) -> None:
         """Push commits to remote repository.
 
         Args:

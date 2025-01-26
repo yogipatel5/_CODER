@@ -20,9 +20,7 @@ if not all([GIT_PATH, GH_PATH]):
     raise RuntimeError("Required executables not found")
 
 
-def safe_run_command(
-    cmd: List[Union[str, None]], input: Optional[str] = None, **kwargs: Any
-) -> Any:
+def safe_run_command(cmd: List[Union[str, None]], input: Optional[str] = None, **kwargs: Any) -> Any:
     """Safely execute a command with subprocess."""
     if not cmd:
         raise ValueError("Command list cannot be empty")
@@ -112,9 +110,7 @@ class TestYAMLValidation(unittest.TestCase):
     def test_git_cli_available(self) -> None:
         """Test if git CLI is available."""
         try:
-            result = safe_run_command(
-                [GIT_PATH, "--version"], capture_output=True, text=True
-            )
+            result = safe_run_command([GIT_PATH, "--version"], capture_output=True, text=True)
             self.assertTrue(result.stdout.startswith("git version"))
         except CalledProcessError:
             self.fail("git CLI is not available")
@@ -122,9 +118,7 @@ class TestYAMLValidation(unittest.TestCase):
     def test_github_cli_available(self) -> None:
         """Test if GitHub CLI is available."""
         try:
-            result = safe_run_command(
-                [GH_PATH, "--version"], capture_output=True, text=True
-            )
+            result = safe_run_command([GH_PATH, "--version"], capture_output=True, text=True)
             self.assertTrue("gh version" in result.stdout)
         except CalledProcessError:
             self.fail("GitHub CLI is not available")
@@ -132,9 +126,7 @@ class TestYAMLValidation(unittest.TestCase):
     def test_github_cli_auth(self) -> None:
         """Test if GitHub CLI is authenticated."""
         try:
-            result = safe_run_command(
-                [GH_PATH, "auth", "status"], capture_output=True, text=True
-            )
+            result = safe_run_command([GH_PATH, "auth", "status"], capture_output=True, text=True)
             self.assertTrue("Logged in to" in result.stdout)
         except CalledProcessError:
             self.fail("GitHub CLI is not authenticated")
@@ -182,18 +174,12 @@ class TestYAMLValidation(unittest.TestCase):
                         capture_output=True,
                         text=True,
                     )
-                    self.assertEqual(
-                        result.returncode, 0, f"Hook command {cmd} not available"
-                    )
+                    self.assertEqual(result.returncode, 0, f"Hook command {cmd} not available")
                 except (ValueError, CalledProcessError) as e:
                     self.fail(f"Hook command {cmd} validation failed: {str(e)}")
 
     @pytest.mark.skipif(
-        not GIT_PATH
-        or safe_run_command(
-            [GIT_PATH, "lfs", "version"], capture_output=True
-        ).returncode
-        != 0,
+        not GIT_PATH or safe_run_command([GIT_PATH, "lfs", "version"], capture_output=True).returncode != 0,
         reason="Git LFS is not installed",
     )
     def test_git_lfs_available(self) -> None:

@@ -1,4 +1,5 @@
 """Django management command to set up initial secrets in Vault."""
+
 import logging
 import os
 
@@ -47,9 +48,7 @@ class Command(BaseCommand):
 
             # Logfire secrets
             logfire_secrets = {
-                "LOGFIRE_TOKEN": os.getenv(
-                    "LOGFIRE_TOKEN", "VKB9cfmnDYRp1n5dGh362g5CmYwhrGgSnFgD5YkK5T6x"
-                ),
+                "LOGFIRE_TOKEN": os.getenv("LOGFIRE_TOKEN", "VKB9cfmnDYRp1n5dGh362g5CmYwhrGgSnFgD5YkK5T6x"),
             }
             vault_service.create_or_update_secret(env, "logfire", logfire_secrets)
             self.stdout.write(self.style.SUCCESS("Added Logfire secrets"))
@@ -82,12 +81,8 @@ class Command(BaseCommand):
 
             # Celery secrets
             celery_secrets = {
-                "CELERY_BROKER_URL": os.getenv(
-                    "CELERY_BROKER_URL", "redis://redis:6379/0"
-                ),
-                "CELERY_RESULT_BACKEND": os.getenv(
-                    "CELERY_RESULT_BACKEND", "redis://redis:6379/0"
-                ),
+                "CELERY_BROKER_URL": os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
+                "CELERY_RESULT_BACKEND": os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0"),
             }
             vault_service.create_or_update_secret(env, "celery", celery_secrets)
             self.stdout.write(self.style.SUCCESS("Added Celery secrets"))

@@ -40,15 +40,11 @@ def parse_yaml_config(config_path: str) -> Dict[str, Any]:
             try:
                 config = yaml.safe_load(config_file)
                 if not isinstance(config, dict):
-                    raise ConfigurationError(
-                        "Invalid YAML: Root element must be a mapping"
-                    )
+                    raise ConfigurationError("Invalid YAML: Root element must be a mapping")
                 logger.info(f"Successfully loaded configuration from {config_path}")
                 return config
             except (ParserError, ScannerError) as e:
-                raise ConfigurationError(
-                    f"Invalid YAML syntax in {config_path}: {str(e)}"
-                )
+                raise ConfigurationError(f"Invalid YAML syntax in {config_path}: {str(e)}")
 
     except Exception as e:
         logger.error(f"Error loading configuration: {str(e)}")

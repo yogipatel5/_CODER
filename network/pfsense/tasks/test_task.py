@@ -1,4 +1,5 @@
 """Test Celery Task see if its autodiscover works."""
+
 import logging
 
 from celery import shared_task

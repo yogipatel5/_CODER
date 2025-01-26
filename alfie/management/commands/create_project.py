@@ -44,9 +44,7 @@ class Command(BaseCommand):
             # Initialize git repository
             # initialize_git_repository(config, project_path)
 
-            self.stdout.write(
-                self.style.SUCCESS("Project creation completed successfully")
-            )
+            self.stdout.write(self.style.SUCCESS("Project creation completed successfully"))
 
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Error: {str(e)}"))

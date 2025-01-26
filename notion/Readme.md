@@ -33,6 +33,7 @@ notion/
 ## Setup
 
 1. Add the app to your Django INSTALLED_APPS:
+
 ```python
 INSTALLED_APPS = [
     ...
@@ -41,11 +42,13 @@ INSTALLED_APPS = [
 ```
 
 2. Configure your Notion API key in Django settings:
+
 ```python
 NOTION_API_KEY = 'your-api-key'
 ```
 
 3. Run migrations:
+
 ```bash
 python manage.py migrate
 ```
@@ -53,6 +56,7 @@ python manage.py migrate
 ## Usage
 
 To scan Notion for new tasks:
+
 ```bash
 python manage.py scan_notion
 ```
@@ -60,6 +64,7 @@ python manage.py scan_notion
 ## Development
 
 Run tests:
+
 ```bash
 python manage.py test notion
 ```

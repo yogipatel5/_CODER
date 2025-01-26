@@ -116,10 +116,7 @@ def get_organization_recommendation(repo_info: Dict[str, Any]) -> Tuple[str, str
         return "keep", "Active GitHub repository"
 
     # AI/ML Projects
-    if any(
-        x in name
-        for x in ["ai", "gpt", "claude", "devin", "superagi", "crewai", "langflow"]
-    ):
+    if any(x in name for x in ["ai", "gpt", "claude", "devin", "superagi", "crewai", "langflow"]):
         return "move ~/Code/AI_ML/", "AI/ML project"
 
     # Company Projects
@@ -158,12 +155,8 @@ def scan_directory() -> List[Dict[str, Any]]:
                 "name": item,
                 "path": full_path,
                 "is_git": is_git_repo(full_path),
-                "last_modified": datetime.fromtimestamp(
-                    os.path.getmtime(full_path)
-                ).strftime("%Y-%m-%d %H:%M:%S"),
-                "size_mb": sum(
-                    f.stat().st_size for f in Path(full_path).rglob("*") if f.is_file()
-                )
+                "last_modified": datetime.fromtimestamp(os.path.getmtime(full_path)).strftime("%Y-%m-%d %H:%M:%S"),
+                "size_mb": sum(f.stat().st_size for f in Path(full_path).rglob("*") if f.is_file())
                 / (1024 * 1024),  # Convert to MB
                 "remote_url": "",
                 "branch": "",
@@ -259,9 +252,7 @@ def process_actions(csv_file: str, dry_run: bool = False) -> None:
                         print(f"Error deleting directory {path}: {e}")
 
             elif action == "backup":
-                backup_path = os.path.join(
-                    backup_dir, f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                )
+                backup_path = os.path.join(backup_dir, f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
                 if dry_run:
                     print(f"[DRY RUN] Would backup {path} to {backup_path}")
                 else:
@@ -280,9 +271,7 @@ def print_usage() -> None:
     """Print usage instructions"""
     print("Usage:")
     print("  Create new CSV:        python dirhelper.py")
-    print(
-        "  Process actions:       python dirhelper.py --process <csv_file> [--dry-run]"
-    )
+    print("  Process actions:       python dirhelper.py --process <csv_file> [--dry-run]")
 
 
 if __name__ == "__main__":

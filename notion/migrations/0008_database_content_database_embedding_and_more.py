@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notion', '0007_database'),
+        ("notion", "0007_database"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='database',
-            name='content',
-            field=models.TextField(blank=True, help_text='Cleaned text content for embeddings'),
+            model_name="database",
+            name="content",
+            field=models.TextField(blank=True, help_text="Cleaned text content for embeddings"),
         ),
         migrations.AddField(
-            model_name='database',
-            name='embedding',
-            field=models.JSONField(blank=True, help_text='Vector embedding of the content', null=True),
+            model_name="database",
+            name="embedding",
+            field=models.JSONField(blank=True, help_text="Vector embedding of the content", null=True),
         ),
         migrations.AddField(
-            model_name='database',
-            name='search_metadata',
-            field=models.JSONField(default=dict, help_text='Metadata for search optimization'),
+            model_name="database",
+            name="search_metadata",
+            field=models.JSONField(default=dict, help_text="Metadata for search optimization"),
         ),
         migrations.AddField(
-            model_name='page',
-            name='content',
-            field=models.TextField(blank=True, help_text='Cleaned text content for embeddings'),
+            model_name="page",
+            name="content",
+            field=models.TextField(blank=True, help_text="Cleaned text content for embeddings"),
         ),
         migrations.AddField(
-            model_name='page',
-            name='embedding',
-            field=models.JSONField(blank=True, db_index=True, help_text='Vector embedding of the content', null=True),
+            model_name="page",
+            name="embedding",
+            field=models.JSONField(blank=True, db_index=True, help_text="Vector embedding of the content", null=True),
         ),
         migrations.AddField(
-            model_name='page',
-            name='search_metadata',
-            field=models.JSONField(default=dict, help_text='Metadata for search optimization'),
+            model_name="page",
+            name="search_metadata",
+            field=models.JSONField(default=dict, help_text="Metadata for search optimization"),
         ),
     ]

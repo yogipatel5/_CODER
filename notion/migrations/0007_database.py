@@ -6,25 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notion', '0006_task_page_blocks'),
+        ("notion", "0006_task_page_blocks"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Database',
+            name="Database",
             fields=[
-                ('id', models.CharField(max_length=255, primary_key=True, serialize=False)),
-                ('created_time', models.DateTimeField()),
-                ('last_edited_time', models.DateTimeField()),
-                ('last_synced_at', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(max_length=255)),
-                ('parent_page_id', models.CharField(max_length=255)),
-                ('properties_schema', models.JSONField(default=dict, help_text='Schema of database properties')),
-                ('rows', models.JSONField(default=list, help_text='Database rows/items')),
+                ("id", models.CharField(max_length=255, primary_key=True, serialize=False)),
+                ("created_time", models.DateTimeField()),
+                ("last_edited_time", models.DateTimeField()),
+                ("last_synced_at", models.DateTimeField(auto_now=True)),
+                ("title", models.CharField(max_length=255)),
+                ("parent_page_id", models.CharField(max_length=255)),
+                ("properties_schema", models.JSONField(default=dict, help_text="Schema of database properties")),
+                ("rows", models.JSONField(default=list, help_text="Database rows/items")),
             ],
             options={
-                'verbose_name': 'Notion Database',
-                'verbose_name_plural': 'Notion Databases',
+                "verbose_name": "Notion Database",
+                "verbose_name_plural": "Notion Databases",
             },
         ),
     ]

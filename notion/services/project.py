@@ -1,4 +1,5 @@
 """Service for interacting with Notion API to get project details."""
+
 import logging
 from typing import Dict, List
 

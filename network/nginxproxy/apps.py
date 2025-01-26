@@ -1,4 +1,5 @@
 """Nginx proxy Django app configuration."""
+
 import importlib
 import os
 from pathlib import Path

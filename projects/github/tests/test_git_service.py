@@ -114,9 +114,7 @@ class TestGitService(unittest.TestCase):
         # Test invalid author format
         with self.assertRaises(GitError) as context:
             git.commit("Test commit", author="Invalid Format")
-        self.assertEqual(
-            str(context.exception), "Invalid author format. Expected 'Name <email>'"
-        )
+        self.assertEqual(str(context.exception), "Invalid author format. Expected 'Name <email>'")
 
 
 if __name__ == "__main__":

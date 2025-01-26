@@ -27,9 +27,7 @@ class ConfigExecutionError(Exception):
     """Exception raised for errors during configuration execution."""
 
 
-def safe_run_command(
-    cmd: List[Union[str, None]], input: Optional[str] = None, **kwargs: Any
-) -> Any:
+def safe_run_command(cmd: List[Union[str, None]], input: Optional[str] = None, **kwargs: Any) -> Any:
     """Safely execute a command with subprocess."""
     if not cmd:
         raise ValueError("Command list cannot be empty")
@@ -119,9 +117,7 @@ def execute_config(config_path: str) -> None:
             if config["git"]["create_local_repo"]:
                 print("\nCreating initial commit...")
                 safe_run_command([GIT_PATH, "add", "."])
-                safe_run_command(
-                    [GIT_PATH, "commit", "-m", config["git"]["commit_message"]]
-                )
+                safe_run_command([GIT_PATH, "commit", "-m", config["git"]["commit_message"]])
 
             # Set up Git LFS if enabled
             if config["git"].get("lfs", {}).get("enabled", False):
@@ -129,9 +125,7 @@ def execute_config(config_path: str) -> None:
 
             # Create local branches only if not creating remote repo
             # (if creating remote, branches will be created after remote setup)
-            if not config["git"]["create_remote_repo"] and config["git"].get(
-                "other_branches"
-            ):
+            if not config["git"]["create_remote_repo"] and config["git"].get("other_branches"):
                 print("\nCreating local branches...")
                 for branch in config["git"]["other_branches"]:
                     safe_run_command([GIT_PATH, "checkout", "-b", branch])
@@ -203,9 +197,7 @@ def _configure_branch_protection(git_config: Dict[str, Any]) -> None:
     """Configure branch protection rules."""
     try:
         # Get GitHub username
-        result = safe_run_command(
-            [GH_PATH, "api", "user", "--jq", ".login"], capture_output=True, text=True
-        )
+        result = safe_run_command([GH_PATH, "api", "user", "--jq", ".login"], capture_output=True, text=True)
         username = result.stdout.strip()
         repo_name = git_config["remote"].get("name", git_config.get("project_name"))
 
@@ -215,11 +207,7 @@ def _configure_branch_protection(git_config: Dict[str, Any]) -> None:
                 "required_status_checks": None,
                 "enforce_admins": True,
                 "required_pull_request_reviews": (
-                    {
-                        "required_approving_review_count": rules.get(
-                            "required_reviews", 1
-                        )
-                    }
+                    {"required_approving_review_count": rules.get("required_reviews", 1)}
                     if rules.get("required_reviews")
                     else None
                 ),
@@ -288,14 +276,10 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
         repo_name = remote_config.get("name", git_config.get("project_name"))
 
         if not repo_name:
-            raise ConfigExecutionError(
-                "Repository name must be specified in configuration"
-            )
+            raise ConfigExecutionError("Repository name must be specified in configuration")
 
         # First check if repository already exists
-        result = safe_run_command(
-            [GH_PATH, "repo", "view", repo_name], capture_output=True, text=True
-        )
+        result = safe_run_command([GH_PATH, "repo", "view", repo_name], capture_output=True, text=True)
 
         if result.returncode == 0:
             # Repository exists, ask user what to do
@@ -326,9 +310,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
 
                 # Stage and commit all files
                 safe_run_command([GIT_PATH, "add", "."])
-                safe_run_command(
-                    [GIT_PATH, "commit", "-m", git_config["commit_message"]]
-                )
+                safe_run_command([GIT_PATH, "commit", "-m", git_config["commit_message"]])
 
                 # Create other branches
                 if git_config.get("other_branches"):
@@ -339,9 +321,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
                     # Return to main branch
                     safe_run_command([GIT_PATH, "checkout", "main"])
             else:
-                raise ConfigExecutionError(
-                    "Invalid choice. Aborting remote repository creation."
-                )
+                raise ConfigExecutionError("Invalid choice. Aborting remote repository creation.")
 
         # Create remote repository
         try:
@@ -352,11 +332,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
                     "repo",
                     "create",
                     repo_name,
-                    (
-                        "--private"
-                        if remote_config["visibility"] == "private"
-                        else "--public"
-                    ),
+                    ("--private" if remote_config["visibility"] == "private" else "--public"),
                     "--description",
                     remote_config["description"],
                 ],
@@ -374,11 +350,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
                     "remote",
                     "add",
                     "origin",
-                    (
-                        f"https://github.com/"
-                        f"{remote_config.get('owner', 'yogipatel5')}/"
-                        f"{repo_name}.git"
-                    ),
+                    (f"https://github.com/" f"{remote_config.get('owner', 'yogipatel5')}/" f"{repo_name}.git"),
                 ],
                 check=True,
             )
@@ -396,8 +368,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
                 )
             elif "could not create" in e.stderr:
                 raise ConfigExecutionError(
-                    "Failed to create repository. Please check your GitHub permissions "
-                    "and organization settings."
+                    "Failed to create repository. Please check your GitHub permissions " "and organization settings."
                 )
             else:
                 raise ConfigExecutionError(f"Failed to create repository: {e.stderr}")
@@ -408,8 +379,7 @@ def _create_remote_repo(git: GitService, git_config: Dict[str, Any]) -> None:
     except CalledProcessError as e:
         if "could not read" in str(e.stderr):
             raise ConfigExecutionError(
-                "Failed to check repository existence. Please verify your GitHub "
-                "authentication and permissions."
+                "Failed to check repository existence. Please verify your GitHub " "authentication and permissions."
             )
         raise ConfigExecutionError(f"Repository operation failed: {e.stderr}")
 
@@ -468,20 +438,14 @@ def _configure_repo_features(repo_name: str, remote_config: Dict[str, Any]) -> N
             # Format full repository name
             full_repo_name = f"{username}/{repo_name}"
 
-            safe_run_command(
-                [GH_PATH, "repo", "edit", full_repo_name] + feature_flags, check=True
-            )
+            safe_run_command([GH_PATH, "repo", "edit", full_repo_name] + feature_flags, check=True)
             print("Repository features configured successfully")
 
     except CalledProcessError as e:
         if e.stderr:
-            raise ConfigExecutionError(
-                f"Failed to configure repository features: {e.stderr}"
-            )
+            raise ConfigExecutionError(f"Failed to configure repository features: {e.stderr}")
         else:
-            raise ConfigExecutionError(
-                f"Failed to configure repository features: {str(e)}"
-            )
+            raise ConfigExecutionError(f"Failed to configure repository features: {str(e)}")
 
 
 def _setup_git_lfs(git: GitService, lfs_config: Dict[str, Any]) -> None:
@@ -538,9 +502,7 @@ def _setup_git_hooks(git: GitService, hooks_config: Dict[str, Any]) -> None:
                     hook_content += f"{cmd} $(cat /tmp/staged_files.txt) || exit 1\n"
                 elif cmd == "ruff":
                     hook_content += 'echo "Running ruff..."\n'
-                    hook_content += (
-                        f"{cmd} check $(cat /tmp/staged_files.txt) || exit 1\n"
-                    )
+                    hook_content += f"{cmd} check $(cat /tmp/staged_files.txt) || exit 1\n"
                 elif cmd == "mypy":
                     hook_content += 'echo "Running mypy..."\n'
                     hook_content += f"{cmd} $(cat /tmp/staged_files.txt) || exit 1\n"
@@ -558,9 +520,7 @@ def _setup_git_hooks(git: GitService, hooks_config: Dict[str, Any]) -> None:
             hook_path.write_text(hook_content)
             hook_path.chmod(0o755)
 
-            print(
-                f"Git hook '{hook_type}' configured with commands: {', '.join(commands)}"
-            )  # noqa: E501
+            print(f"Git hook '{hook_type}' configured with commands: {', '.join(commands)}")  # noqa: E501
 
         print("Git hooks configured successfully")
 

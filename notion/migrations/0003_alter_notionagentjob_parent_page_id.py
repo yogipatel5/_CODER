@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notion', '0002_task'),
+        ("notion", "0002_task"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='notionagentjob',
-            name='parent_page_id',
-            field=models.CharField(blank=True, help_text='ID of the parent page in Notion (if any)', max_length=255, null=True),
+            model_name="notionagentjob",
+            name="parent_page_id",
+            field=models.CharField(
+                blank=True, help_text="ID of the parent page in Notion (if any)", max_length=255, null=True
+            ),
         ),
     ]

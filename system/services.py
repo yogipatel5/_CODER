@@ -40,9 +40,7 @@ def create_conda_environment(config: Dict[str, Any], project_path: str) -> None:
             return
 
         # Create conda environment
-        logger.info(
-            f"Creating conda environment '{env_name}' with Python {python_version}"
-        )
+        logger.info(f"Creating conda environment '{env_name}' with Python {python_version}")
         subprocess.run(
             ["conda", "create", "-p", env_path, f"python={python_version}", "--yes"],
             check=True,
@@ -63,6 +61,4 @@ def create_conda_environment(config: Dict[str, Any], project_path: str) -> None:
     except json.JSONDecodeError as e:
         raise ConfigurationError(f"Failed to parse conda environment list: {str(e)}")
     except Exception as e:
-        raise ConfigurationError(
-            f"Unexpected error creating conda environment: {str(e)}"
-        )
+        raise ConfigurationError(f"Unexpected error creating conda environment: {str(e)}")
