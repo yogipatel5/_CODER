@@ -1,9 +1,12 @@
 """Notion API client implementation."""
 
+import logging
+import os
 from typing import Dict, List
 
-from django.conf import settings
 from notion_client import Client
+
+logger = logging.getLogger(__name__)
 
 
 class NotionClient:
@@ -15,7 +18,9 @@ class NotionClient:
     # TODO: Move API response parsing to separate service layer
     def __init__(self):
         """Initialize the Notion client."""
-        self.client = Client(auth=settings.NOTION_API_KEY)
+        if not os.getenv("NOTION_API_KEY"):
+            raise ValueError("NOTION_API_KEY environment variable is required")
+        self.client = Client(auth=os.getenv("NOTION_API_KEY"))
 
     def get_page(self, page_id: str) -> Dict:
         """Retrieve a page from Notion.

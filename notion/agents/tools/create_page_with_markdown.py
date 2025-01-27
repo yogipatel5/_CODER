@@ -481,38 +481,3 @@ class CreatePageWithMarkdownTool(BaseTool):
         title: str,
     ) -> str:
         return self._run(parent_id, markdown_content, title)
-
-
-if __name__ == "__main__":
-    # Environment variables should already be loaded from the top-level import
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
-    # print(f"Debug: Using environment from: {env_path}")
-
-    if not os.getenv("NOTION_API_KEY"):
-        raise ValueError("NOTION_API_KEY environment variable is not set")
-
-    # print("Debug: Environment loaded successfully")
-
-    # Read the full test sample markdown file
-    full_test_file = os.path.join(os.path.dirname(__file__), "full_test_sample.md")
-    callout_test_file = os.path.join(os.path.dirname(__file__), "callout_test_sample.md")
-
-    with open(full_test_file, "r") as f:
-        full_test_content = f.read()
-
-    with open(callout_test_file, "r") as f:
-        callout_test_content = f.read()
-
-    tool = CreatePageWithMarkdownTool()
-    try:
-        result = tool.run(
-            parent_id=os.getenv(
-                "NOTION_TEST_PARENT_ID",
-                "1809167955c880a284ebc021e195f6fb",
-            ),
-            markdown_content=full_test_content,
-            title="Notion Integration Documentation",
-        )
-        print("Success:", result)
-    except Exception as e:
-        print("Error:", str(e))

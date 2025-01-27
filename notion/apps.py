@@ -2,8 +2,34 @@ import logging
 from pathlib import Path
 
 from django.apps import AppConfig
+from django.db.models.signals import post_migrate
 
 logger = logging.getLogger(__name__)
+
+
+def setup_periodic_tasks(sender, **kwargs):
+    """Set up periodic tasks for Notion sync."""
+    from django_celery_beat.models import IntervalSchedule, PeriodicTask
+
+    try:
+        # Create or get the interval schedule (every 5 minutes)
+        schedule, _ = IntervalSchedule.objects.get_or_create(
+            every=5,
+            period=IntervalSchedule.MINUTES,
+        )
+
+        # Create or update the periodic task
+        PeriodicTask.objects.update_or_create(
+            name="sync_notion_content",
+            defaults={
+                "task": "notion.tasks.sync.sync_notion_content",
+                "interval": schedule,
+                "enabled": True,
+            },
+        )
+        logger.info("Successfully set up Notion sync periodic task")
+    except Exception as e:
+        logger.error(f"Error setting up periodic tasks: {e}")
 
 
 class NotionConfig(AppConfig):
@@ -40,30 +66,6 @@ class NotionConfig(AppConfig):
             except ImportError as e:
                 logger.warning(f"Failed to import {module_name}: {str(e)}")
 
-    def _setup_periodic_tasks(self):
-        """Set up periodic tasks for Notion sync."""
-        from django_celery_beat.models import IntervalSchedule, PeriodicTask
-
-        try:
-            # Create or get the interval schedule (every 5 minutes)
-            schedule, _ = IntervalSchedule.objects.get_or_create(
-                every=5,
-                period=IntervalSchedule.MINUTES,
-            )
-
-            # Create or update the periodic task
-            PeriodicTask.objects.update_or_create(
-                name="sync_notion_content",
-                defaults={
-                    "task": "notion.tasks.sync.sync_notion_content",
-                    "interval": schedule,
-                    "enabled": True,
-                },
-            )
-            logger.info("Successfully set up Notion sync periodic task")
-        except Exception as e:
-            logger.error(f"Error setting up periodic tasks: {e}")
-
     def ready(self):
         """Initialize the application by importing all required modules and setting up periodic tasks."""
         # Import all admin, models and task modules
@@ -71,8 +73,5 @@ class NotionConfig(AppConfig):
         self._import_modules_from_directory("models")
         self._import_modules_from_directory("tasks")
 
-        # Set up periodic tasks, but only if we're not in a management command
-        import sys
-
-        if "manage.py" not in sys.argv[0]:
-            self._setup_periodic_tasks()
+        # Connect the post_migrate signal handler
+        post_migrate.connect(setup_periodic_tasks, sender=self)

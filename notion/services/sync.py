@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from typing import Dict, List
 
@@ -124,7 +125,7 @@ class NotionSyncService:
 
     def sync_project_databases(self):
         """Sync databases from the project page."""
-        project_page_id = getattr(settings, "NOTION_PROJECT_PAGE_ID", None)
+        project_page_id = os.getenv("NOTION_PROJECT_PAGE_ID", None)
         if not project_page_id:
             logger.warning("NOTION_PROJECT_PAGE_ID not set in settings")
             return
