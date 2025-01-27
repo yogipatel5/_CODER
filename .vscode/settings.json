@@ -1,11 +1,16 @@
 {
   "editor.useTabStops": true,
-  "editor.rulers": [80, 100],
-
+  "editor.rulers": [125],
+  "editor.wrappingStrategy": "advanced",
+  "editor.wordWrap": "on",
+  "editor.wordWrapColumn": 125,
   "[python]": {
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    }
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
+    },
+    "editor.defaultFormatter": "trunk.io",
+    "editor.formatOnSave": true
   },
   "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
   "files.exclude": {
@@ -23,7 +28,6 @@
     ".gitattributes": true,
     "_CODER.coder.yaml": true,
     "pytest.ini": true,
-    "pyproject.toml": true,
     ".coverage": true,
     ".cursorrules": true,
     "_test_project.yaml": true,
@@ -43,8 +47,6 @@
     "**/__pycache__": true,
     "**/__init__.py": true
   },
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "trunk.io",
   "workbench.iconTheme": "material-icon-theme",
   "material-icon-theme.folders.associations": {
     "notion": "notion",

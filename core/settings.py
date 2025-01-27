@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "alfie.apps.AlfieConfig",
     "core.apps.CoreConfig",
+    "projects.django.apps.CreateAppConfig",
     # "projects.apps.ProjectsConfig",
     # "projects.github.apps.GithubConfig",
     "projects.vault.apps.VaultConfig",
