@@ -16,10 +16,12 @@ from pathlib import Path
 
 import yaml
 
-from core.vault_settings import get_vault_settings
+from core.secrets import secrets_manager
 
-# Get settings from Vault
-vault_settings = get_vault_settings()
+logger = logging.getLogger(__name__)
+
+# Load all secrets and set environment variables
+secrets_manager.load_secrets()
 
 # if project.yaml exists, load it
 try:
@@ -32,11 +34,6 @@ try:
 
 except FileNotFoundError:
     pass
-
-# Get Logfire settings from Vault
-logfire_settings = vault_settings.get("logfire", {})
-LOGFIRE_TOKEN = logfire_settings.get("token", os.getenv("LOGFIRE_TOKEN", ""))
-LOGFIRE_PROJECT = logfire_settings.get("project", "coder")
 
 LOGGING = {
     "version": 1,
@@ -78,18 +75,10 @@ LOGGING = {
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
 # Get Django core settings from Vault
-django_settings = vault_settings.get("django", {})
-PROXMOX_CREDS = vault_settings.get("proxmox", {})
-SECRET_KEY = django_settings.get("secret_key", os.getenv("DJANGO_SECRET_KEY", ""))
-DEBUG = django_settings.get("debug", os.getenv("DJANGO_DEBUG", "True")).lower() == "true"
-ALLOWED_HOSTS = django_settings.get(
-    "allowed_hosts", os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Application definition
 
@@ -113,17 +102,6 @@ INSTALLED_APPS = [
     "django_celery_beat",
     # Third party apps
 ]
-
-# Notion settings
-# TODO: Move hardcoded IDs to environment variables
-# TODO: Add validation for required Notion settings
-# TODO: Add configuration for rate limiting
-# TODO: Add separate settings for different environments
-
-NOTION_API_KEY = os.getenv("NOTION_API_KEY")
-NOTION_PROJECT_PAGE_ID = "1769167955c8815f925ee2860e01f786"
-if not NOTION_API_KEY:
-    logging.warning("NOTION_API_KEY environment variable not set")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -160,15 +138,14 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Get database settings from Vault
-db_settings = vault_settings.get("database", {})
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": db_settings.get("name", os.getenv("POSTGRES_DB")),
-        "USER": db_settings.get("user", os.getenv("POSTGRES_USER")),
-        "PASSWORD": db_settings.get("password", os.getenv("POSTGRES_PASSWORD")),
-        "HOST": db_settings.get("host", os.getenv("POSTGRES_HOST")),
-        "PORT": db_settings.get("port", os.getenv("POSTGRES_PORT")),
+        "NAME": os.getenv("DATABASE_NAME"),
+        "USER": os.getenv("DATABASE_USER"),
+        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
+        "HOST": os.getenv("DATABASE_HOST"),
+        "PORT": os.getenv("DATABASE_PORT"),
         "OPTIONS": {
             "client_encoding": "UTF8",
         },
@@ -176,9 +153,8 @@ DATABASES = {
 }
 
 # Get Redis settings from Vault
-redis_settings = vault_settings.get("redis", {})
-REDIS_HOST = redis_settings.get("host", os.getenv("REDIS_HOST"))
-REDIS_PORT = redis_settings.get("port", os.getenv("REDIS_PORT"))
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
 
 # Redis Cache
 CACHES = {
@@ -196,15 +172,12 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
 # Get Celery settings from Vault
-celery_settings = vault_settings.get("celery", {})
-CELERY_BROKER_URL = celery_settings.get("broker_url", os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"))
-CELERY_RESULT_BACKEND = celery_settings.get(
-    "result_backend", os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
-)
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = celery_settings.get("timezone", "America/New_York")
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "America/New_York")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
@@ -232,12 +205,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "America/New_York"
-
+TIME_ZONE = os.getenv("DJANGO_TIME_ZONE")
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
