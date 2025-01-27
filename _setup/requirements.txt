@@ -1,9 +1,8 @@
--r _setup/prod.txt
+-r prod.txt
 
 # Development dependencies (only needed for local development)
--r _setup/dev.txt
+-r dev.txt
 
 # Pin specific versions for security
-langchain==0.3.1  # Fix multiple security vulnerabilities
-GitPython==3.1.41  # Fix CVE-2023-40590
 proxmoxer==2.0.1
+setuptools>=70.0.0  # Fix for CVE-2024-6345

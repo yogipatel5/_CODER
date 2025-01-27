@@ -1,5 +1,5 @@
 """Network package initialization."""
 
-from .apps import NetworkConfig
+# This is a namespace package for network-related modules
 
-__all__ = ["NetworkConfig"]
+__all__ = []

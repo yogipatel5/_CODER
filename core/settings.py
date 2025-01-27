@@ -108,7 +108,6 @@ INSTALLED_APPS = [
     "notion.apps.NotionConfig",  # Temporarily disabled until models are set up
     "network.pfsense.apps.PfsenseConfig",
     "system.apps.SystemConfig",
-    "network.apps.NetworkConfig",
     "network.proxmox.apps.ProxmoxConfig",
     "django_celery_beat",
     # Third party apps

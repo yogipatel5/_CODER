@@ -3,13 +3,15 @@ services:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/app
+      - ..:/app
+    working_dir: /app
     ports:
       - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONPATH=/app
     depends_on:
       - redis
       - celery
@@ -19,11 +21,13 @@ services:
     build: .
     command: celery -A core worker --loglevel=info
     volumes:
-      - .:/app
+      - ..:/app
+    working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONPATH=/app
     depends_on:
       - redis
 
@@ -31,11 +35,13 @@ services:
     build: .
     command: celery -A core beat --loglevel=info
     volumes:
-      - .:/app
+      - ..:/app
+    working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONPATH=/app
     depends_on:
       - redis
       - celery
