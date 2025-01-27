@@ -18,7 +18,7 @@ dev/cloudflare
 ACCOUNT_ID \***\*\*\*\*\*\***
 API_TOKEN \***\*\*\*\*\*\***
 
-Exmaple:
-curl -X GET "https://api.cloudflare.com/client/v4/accounts/[ACCOUNT_ID]/tokens/verify" \
+Example:
+`curl -X GET "https://api.cloudflare.com/client/v4/accounts/[ACCOUNT_ID]/tokens/verify" \
  -H "Authorization: Bearer [API_TOKEN]" \
- -H "Content-Type:application/json"
+ -H "Content-Type:application/json"`

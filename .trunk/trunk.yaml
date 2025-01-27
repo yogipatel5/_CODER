@@ -24,7 +24,7 @@ lint:
     - git-diff-check
     - hadolint@2.12.1-beta
     - isort@5.13.2
-    - markdownlint@0.43.0
+    - markdownlint@0.44.0
     - osv-scanner@1.9.2
     - prettier@3.4.2
     - ruff@0.9.3
@@ -35,6 +35,8 @@ lint:
     - yamllint@1.35.1
 
 actions:
+  disabled:
+    - trunk-announce
   enabled:
     - trunk-fmt-pre-commit
     - trunk-check-pre-push

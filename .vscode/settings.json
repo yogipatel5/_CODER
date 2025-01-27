@@ -1,5 +1,4 @@
 {
-  "editor.defaultFormatter": null,
   "editor.useTabStops": true,
   "editor.rulers": [80, 100],
 
@@ -44,9 +43,8 @@
     "**/__pycache__": true,
     "**/__init__.py": true
   },
-  "[properties]": {
-    "editor.defaultFormatter": "trunk.io"
-  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "trunk.io",
   "workbench.iconTheme": "material-icon-theme",
   "material-icon-theme.folders.associations": {
     "notion": "notion",
