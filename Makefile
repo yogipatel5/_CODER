@@ -48,6 +48,9 @@ logs: ## View all Docker container logs
 logs-web: ## View web container logs
 	docker compose -f _setup/docker-compose.yml logs -f web
 
+logs-web-100: ## View web container logs
+	docker compose -f _setup/docker-compose.yml logs -f web --tail 100
+
 logs-celery: ## View celery container logs
 	docker compose -f _setup/docker-compose.yml logs -f celery
 
