@@ -1,6 +1,7 @@
+# Production dependencies
 -r prod.txt
 
-# Development dependencies (only needed for local development)
+# Development dependencies
 -r dev.txt
 
 # Pin specific versions for security

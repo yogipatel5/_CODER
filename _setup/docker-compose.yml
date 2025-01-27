@@ -1,6 +1,8 @@
 services:
   web:
-    build: .
+    build:
+      context: ..
+      dockerfile: _setup/Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ..:/app
@@ -18,7 +20,9 @@ services:
       - celery-beat
 
   celery:
-    build: .
+    build:
+      context: ..
+      dockerfile: _setup/Dockerfile
     command: celery -A core worker --loglevel=info
     volumes:
       - ..:/app
@@ -32,7 +36,9 @@ services:
       - redis
 
   celery-beat:
-    build: .
+    build:
+      context: ..
+      dockerfile: _setup/Dockerfile
     command: celery -A core beat --loglevel=info
     volumes:
       - ..:/app

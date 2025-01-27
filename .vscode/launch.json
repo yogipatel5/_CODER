@@ -26,9 +26,11 @@
       "program": "${file}",
       "console": "integratedTerminal",
       "justMyCode": false,
+      "django": true,
       "env": {
         "PYTHONPATH": "${workspaceFolder}",
-        "DJANGO_SETTINGS_MODULE": "core.settings"
+        "DJANGO_SETTINGS_MODULE": "core.settings",
+        "DJANGO_ALLOW_ASYNC_UNSAFE": "true"
       }
     }
   ],

@@ -28,6 +28,27 @@ class NotionClient:
         """
         return self.client.pages.retrieve(page_id)
 
+    def get_blocks(self, page_id: str) -> List[Dict]:
+        """Retrieve all blocks for a page from Notion.
+
+        Args:
+            page_id: The ID of the page to retrieve blocks for
+
+        Returns:
+            List of dictionaries containing block data
+        """
+        blocks = []
+        has_more = True
+        start_cursor = None
+
+        while has_more:
+            response = self.client.blocks.children.list(block_id=page_id, start_cursor=start_cursor)
+            blocks.extend(response.get("results", []))
+            has_more = response.get("has_more", False)
+            start_cursor = response.get("next_cursor")
+
+        return blocks
+
     def search_pages(self, query: str) -> List[Dict]:
         """Search for pages in Notion.
 

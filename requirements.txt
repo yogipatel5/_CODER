@@ -1,0 +1,8 @@
+-r prod.txt
+
+# Development dependencies (only needed for local development)
+-r dev.txt
+
+# Pin specific versions for security
+proxmoxer==2.0.1
+setuptools>=70.0.0  # Fix for CVE-2024-6345

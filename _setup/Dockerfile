@@ -11,14 +11,13 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements files
-COPY *.txt /app/
-
-# Install Python dependencies
+# Copy requirements files first for better caching
+COPY requirements.txt /app/
+COPY _setup/*.txt /app/
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy project files
-COPY . .
+COPY . /app/
 
 # Create a non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app

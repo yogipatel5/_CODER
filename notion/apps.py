@@ -66,8 +66,9 @@ class NotionConfig(AppConfig):
 
     def ready(self):
         """Initialize the application by importing all required modules and setting up periodic tasks."""
-        # Import all admin and task modules
+        # Import all admin, models and task modules
         self._import_modules_from_directory("admin")
+        self._import_modules_from_directory("models")
         self._import_modules_from_directory("tasks")
 
         # Set up periodic tasks, but only if we're not in a management command
