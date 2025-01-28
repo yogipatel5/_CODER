@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 import numpy as np
@@ -15,20 +16,17 @@ class EmbeddingsService:
 
     def __init__(self):
         """Initialize the OpenAI client with local endpoint."""
+        api_base = os.getenv("OPENAI_API_BASE", "http://10.16.1.11:1234")
         self.client = openai.OpenAI(
-            base_url="http://127.0.0.1:1234/v1",  # Update to include /v1 prefix
+            base_url=f"{api_base}/v1",  # Update to include /v1 prefix
             api_key="not-needed",  # API key not needed for local endpoint
         )
-        self.model = "text-embedding-nomic-embed-text-v1.5-embedding"  # E5-Mistral model
+        self.model = "gaianet/Nomic-embed-text-v1.5-Embedding-GGUF"  # E5-Mistral model
         self.max_content_length = 8192  # Maximum content length in characters
         self.target_dimensions = 384  # Target number of dimensions after compression'
 
         self.models = self.client.models.list()
-        # Check if (self.model) is in the list of models
-        if self.model not in [model.id for model in self.models.data]:
-            raise ValueError(
-                f"Model {self.model} not found in list of available models. Choose from: {[model.id for model in self.models.data]}"
-            )
+        print(self.models)
 
     def _clean_content(self, page):
         """
@@ -58,8 +56,12 @@ class EmbeddingsService:
             text = f"{page.title}\n\n{text}"
 
         # Save the cleaned content to the page model
-        page.content = text[: self.max_content_length]  # Truncate to max length
-        page.save(update_fields=["content"])
+        # TODO: Find out why the save is failing
+        # try:
+        #     page.content = text[: self.max_content_length]  # Truncate to max length
+        #     page.save(update_fields=["content"])
+        # except Exception as e:
+        #     logger.error(f"Error saving page content for page {page.id}: {str(e)}")
 
         # Truncate if needed
         if len(text) > self.max_content_length:
