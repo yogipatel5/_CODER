@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import JSONField
+from pgvector.django import VectorField
 
 from notion.managers.page import PageManager
 
@@ -12,17 +12,17 @@ class Page(models.Model):
     # TODO: Move complex property handling to PageManager
     # TODO: Add proper validation for parent_type choices
     # TODO: Consider moving JSON schema validation to a separate service
-    id = models.CharField(max_length=255, primary_key=True)
+    id = models.CharField(max_length=36, primary_key=True)
     created_time = models.DateTimeField()
     last_edited_time = models.DateTimeField()
     last_synced_at = models.DateTimeField(auto_now=True)
 
-    content = models.TextField(blank=True, help_text="Cleaned text content for embeddings")
-    embedding = models.JSONField(null=True, blank=True, help_text="Vector embedding of the content", db_index=True)
-    search_metadata = JSONField(default=dict, help_text="Metadata for search optimization")
+    content = models.TextField(null=True, blank=True, help_text="Cleaned text content for embeddings")
+    embedding = VectorField(dimensions=384, null=True, blank=True, help_text="Vector embedding of the content")
+    search_metadata = models.JSONField(default=dict, help_text="Metadata for search optimization")
 
-    cover = JSONField(null=True, blank=True)  # Could be an image or file
-    icon = JSONField(null=True, blank=True)  # Contains type and emoji data
+    cover = models.JSONField(null=True, blank=True)  # Could be an image or file
+    icon = models.JSONField(null=True, blank=True)  # Contains type and emoji data
 
     parent_type = models.CharField(max_length=50, default="workspace")  # e.g., "workspace", "page", etc.
     parent_id = models.CharField(max_length=255, null=True, blank=True)
@@ -33,13 +33,16 @@ class Page(models.Model):
     title = models.CharField(max_length=255)
     url = models.URLField()
     public_url = models.URLField(null=True, blank=True)
-    raw_properties = JSONField(default=dict)
-    blocks = JSONField(default=list, help_text="Page content blocks from Notion")  # New field for content
+    raw_properties = models.JSONField(default=dict)
+    blocks = models.JSONField(default=list, help_text="Page content blocks from Notion")  # New field for content
 
     class Meta:
         verbose_name = "Notion Page"
         verbose_name_plural = "Notion Pages"
-        indexes = [models.Index(fields=["embedding"], name="notion_page_embedding_idx", opclasses=["vector_ops"])]
+        db_table = "notion_page"
+        indexes = [
+            models.Index(fields=["title"]),
+        ]
 
     def __str__(self):
         return self.title

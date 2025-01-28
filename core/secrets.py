@@ -30,20 +30,20 @@ class SecretsManager:
                     for key, val in value.items():
                         env_var = f"{group.upper()}_{key.upper()}"
                         os.environ[env_var] = str(val)
-                        logger.debug(f"Set environment variable: {env_var}")
+                        # logger.debug(f"Set environment variable: {env_var}")
                 else:
                     logger.warning(f"No {group} settings found in Vault for {env} environment")
 
             # Print available secrets in dev environment (only once)
             if env == "dev" and not self._printed_secrets:
-                print("\nAvailable Secrets:")
-                print("------------------")
+                logger.debug("\nAvailable Secrets:")
+                logger.debug("------------------")
                 for group, secrets in self._secrets.items():
                     if secrets:
-                        print(f"\n{group}:")
+                        logger.debug(f"\n{group}:")
                         for key in secrets.keys():
-                            print(f"  - {key}")
-                print("\n")
+                            logger.debug(f"  - {key}")
+                logger.debug("\n")
                 self._printed_secrets = True
 
         except Exception as e:

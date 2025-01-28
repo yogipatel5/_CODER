@@ -17,7 +17,7 @@ class MarkdownService:
 
         markdown = ""
         for block in blocks:
-            logger.debug("Converting block type: %s", block.get("type"))
+            # logger.debug("Converting block type: %s", block.get("type"))
             markdown += self._convert_block_to_markdown(block)
         return markdown.strip()
 
@@ -28,7 +28,7 @@ class MarkdownService:
             logger.warning("Block missing type: %s", block)
             return ""
 
-        logger.debug("Processing block type: %s", block_type)
+        # logger.debug("Processing block type: %s", block_type)
         try:
             content = ""
 

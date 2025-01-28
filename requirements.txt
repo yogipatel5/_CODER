@@ -6,3 +6,5 @@
 # Pin specific versions for security
 proxmoxer==2.0.1
 setuptools>=70.0.0  # Fix for CVE-2024-6345
+tqdm>=4.66.1
+colorlog>=6.9.0  # For colored logging output

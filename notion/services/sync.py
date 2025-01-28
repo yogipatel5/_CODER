@@ -55,7 +55,7 @@ class NotionSyncService:
     def sync_pages(self):
         """Sync all pages from Notion."""
         pages = self.client.search_pages("")
-        logger.info(f"Found {len(pages)} items in search results")
+        logger.debug(f"Found {len(pages)} items in search results")
 
         synced_pages = 0
         skipped_databases = 0
@@ -135,11 +135,11 @@ class NotionSyncService:
 
         # Get all blocks from the project page
         blocks = self.client.get_block_children(project_page_id)
-        logger.info(f"Found {len(blocks)} blocks in project page")
+        logger.debug(f"Found {len(blocks)} blocks in project page")
 
         # Filter for child_database blocks
         database_blocks = [b for b in blocks if b.get("type") == "child_database"]
-        logger.info(f"Found {len(database_blocks)} databases in project page")
+        logger.debug(f"Found {len(database_blocks)} databases in project page")
 
         # Create a group of tasks to sync databases in parallel
         tasks = []
@@ -153,7 +153,7 @@ class NotionSyncService:
 
             # Skip if database hasn't changed
             if not self._needs_update(database_id, last_edited_time, is_database=True):
-                logger.info(f"Skipping unchanged database: {title} ({database_id})")
+                logger.debug(f"Skipping unchanged database: {title} ({database_id})")
                 continue
 
             tasks.append(sync_database.s(database_id=database_id, title=title))
@@ -188,8 +188,8 @@ class NotionSyncService:
 
     def sync_all(self):
         """Sync all Notion content (pages and databases)."""
-        logger.info("Starting Notion sync")
+        logger.debug("Starting Notion sync")
         self.sync_pages()
         self.sync_project_databases()
-        logger.info("Sync completed successfully")
+        logger.debug("Sync completed successfully")
         return "Sync completed successfully"

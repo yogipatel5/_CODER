@@ -33,6 +33,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=/app
+      - OPENAI_API_BASE=http://10.16.1.11:1234
     depends_on:
       - redis
 
