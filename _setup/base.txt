@@ -7,3 +7,4 @@ python-dotenv==1.0.1
 pydantic>=2.4.0
 redis==5.0.1
 pgvector==0.3.6
+pycups==2.0.4

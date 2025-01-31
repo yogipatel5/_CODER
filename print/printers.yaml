@@ -1,0 +1,58 @@
+printers:
+  - name: HP OfficeJet Pro 8720
+    device_name: HP_OfficeJet_Pro_8720
+    aliases: [hp, office, doc]
+    printer_type: INKJET
+    connection_type: CUPS
+    location: Network Printer
+    model: OfficeJet Pro 8720
+    airprint_enabled: true
+    color_capable: true
+    duplex_capable: true
+    default_paper_size: LETTER
+    default_media_type: ANY
+    default_print_quality: NORMAL
+    default_color_model: RGB
+    resolution_dpi: 1200
+    supports_custom_paper_size: false
+    is_default: true
+    status: IDLE
+
+  - name: DYMO LabelWriter 4XL
+    device_name: DYMO_LabelWriter_4XL
+    aliases: [dymo, 4xl, label, shipping]
+    printer_type: THERMAL
+    connection_type: CUPS
+    location: Yogi's Mac Studio
+    model: LabelWriter 4XL
+    airprint_enabled: false
+    color_capable: false
+    duplex_capable: false
+    default_paper_size: LABEL_4X6
+    default_media_type: LABELS
+    default_print_quality: TEXT
+    default_color_model: GRAY
+    resolution_dpi: 300
+    supports_custom_paper_size: true
+    is_default: false
+    status: IDLE
+
+  - name: Niimbot D110
+    device_name: /dev/cu.usbmodem00000000050C1
+    model: NIIMBOT_D110
+    connection_type: USB
+    description: Niimbot D110 Label Printer
+    aliases: [niimbot, d110, mini, small]
+    printer_type: BLUETOOTH
+    location: Desk
+    airprint_enabled: false
+    color_capable: false
+    duplex_capable: false
+    default_paper_size: LABEL_30x15
+    default_media_type: THERMAL_LABEL
+    default_print_quality: NORMAL
+    default_color_model: GRAY
+    resolution_dpi: 200
+    supports_custom_paper_size: false
+    is_default: false
+    status: IDLE

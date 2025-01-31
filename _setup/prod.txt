@@ -10,3 +10,5 @@ redis>=5.0.1
 notion-client>=2.2.1
 hvac
 markdown2
+bleak==0.22.3
+pyserial==3.5

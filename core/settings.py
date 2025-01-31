@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "network.pfsense.apps.PfsenseConfig",
     "system.apps.SystemConfig",
     "network.proxmox.apps.ProxmoxConfig",
+    "print.apps.PrintConfig",  # Print app for document generation
     "django_celery_beat",
     # Third party apps
 ]

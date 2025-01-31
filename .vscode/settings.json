@@ -61,5 +61,6 @@
   "files.watcherExclude": {
     "**/__pycache__": true
   },
-  "hide-files.files": []
+  "hide-files.files": [],
+  "codeseek.apiKey": "sk-77efc16cbd2d414ba3859358d7da0675"
 }
