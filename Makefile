@@ -38,8 +38,23 @@ down: ## Stop Docker containers
 build: ## Build Docker images
 	docker compose -f _setup/docker-compose.yml build
 
-buildrun: ## Build Docker images and run containers
-	docker compose -f _setup/docker-compose.yml build && docker compose -f _setup/docker-compose.yml up -d
+deep-clean: ## Deep clean - removes all Docker containers, images, volumes, and cache
+	docker compose -f _setup/docker-compose.yml down -v
+	docker system prune -af --volumes
+	find . -type d -name "__pycache__" -exec rm -r {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name ".DS_Store" -delete
+	find . -type d -name "node_modules" -exec rm -rf {} +
+	find . -type f -name "*.log" -delete
+
+buildrun: deep-clean ## Clean everything, build Docker images and run containers
+	docker compose -f _setup/docker-compose.yml build --no-cache
+	docker compose -f _setup/docker-compose.yml up -d
+	@echo "Cleaning up dangling images..."
+	@docker image prune -f > /dev/null 2>&1
+	@echo "Waiting for services to start..."
+	@sleep 10
+	cd /Users/yp/Code/_CODER && docker compose -f _setup/docker-compose.yml exec -T web python manage.py migrate
 
 # Docker logs
 logs: ## View all Docker container logs
@@ -80,4 +95,11 @@ install-reqs:
 	docker compose -f _setup/docker-compose.yml run --rm celery-beat pip install -r _setup/requirements.txt
 	docker compose -f _setup/docker-compose.yml run --rm redis pip install -r _setup/requirements.txt
 	pip install -r _setup/requirements.txt
-	
+
+quick-install: ## Install requirements in running containers without rebuilding
+	@echo "Installing requirements in web container..."
+	docker compose -f _setup/docker-compose.yml exec -u root web bash -c "cd /app && pip install -r _setup/requirements.txt"
+	@echo "Installing requirements in celery container..."
+	docker compose -f _setup/docker-compose.yml exec -u root celery bash -c "cd /app && pip install -r _setup/requirements.txt"
+	@echo "Installing requirements in celery-beat container..."
+	docker compose -f _setup/docker-compose.yml exec -u root celery-beat bash -c "cd /app && pip install -r _setup/requirements.txt"

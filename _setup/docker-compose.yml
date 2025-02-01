@@ -1,5 +1,6 @@
 services:
   web:
+    image: coder-app
     build:
       context: ..
       dockerfile: _setup/Dockerfile
@@ -8,19 +9,18 @@ services:
       - ..:/app
     working_dir: /app
     ports:
-      - "8000:8000"
+      - 8000:8000
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=/app
-
+      - REDIS_HOST=10.16.1.100
+      - REDIS_PORT=6379
     depends_on:
-      - redis
       - celery
       - celery-beat
 
   celery:
+    image: coder-app
     build:
       context: ..
       dockerfile: _setup/Dockerfile
@@ -30,14 +30,13 @@ services:
     working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=/app
       - OPENAI_API_BASE=http://10.16.1.11:1234
-    depends_on:
-      - redis
+      - REDIS_HOST=10.16.1.100
+      - REDIS_PORT=6379
 
   celery-beat:
+    image: coder-app
     build:
       context: ..
       dockerfile: _setup/Dockerfile
@@ -47,14 +46,8 @@ services:
     working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=/app
+      - REDIS_HOST=10.16.1.100
+      - REDIS_PORT=6379
     depends_on:
-      - redis
       - celery
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"

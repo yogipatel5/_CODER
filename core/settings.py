@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 # Load all secrets and set environment variables
 secrets_manager.load_secrets()
 
+# Debug logging for Redis and Celery configuration
+logger.debug("Redis Configuration:")
+logger.debug(f"REDIS_HOST: {os.getenv('REDIS_HOST')}")
+logger.debug(f"REDIS_PORT: {os.getenv('REDIS_PORT')}")
+logger.debug("\nCelery Configuration:")
+logger.debug(f"CELERY_BROKER_URL: {os.getenv('CELERY_BROKER_URL')}")
+logger.debug(f"CELERY_RESULT_BACKEND: {os.getenv('CELERY_RESULT_BACKEND')}")
+
 # if project.yaml exists, load it
 try:
     with open("project.yaml", "r") as f:
@@ -42,6 +50,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# Get Redis settings from environment variables
+REDIS_HOST = os.getenv("REDIS_HOST", "10.16.1.100")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+
+# Redis Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+# Use Redis for session cache
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "America/New_York")
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Application definition
 
@@ -115,35 +153,6 @@ DATABASES = {
         },
     }
 }
-
-# Get Redis settings from Vault
-REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = os.getenv("REDIS_PORT")
-
-# Redis Cache
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    }
-}
-
-# Use Redis for session cache
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-
-# Get Celery settings from Vault
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "America/New_York")
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
