@@ -11,59 +11,9 @@ analyze_note:
     and recommendations for categorization and potential note combinations.
   agent: notes_organizer
 
-process_note:
+create_note:
   description: >
-    Process a single note based on the analysis:
-    1. Follow any specific formatting instructions (like adding mermaid diagrams)
-    2. Organize the content according to the instructions or best practices
-    3. Create appropriate sections and structure
-    4. Ensure all content is properly formatted and clear
+    Create a new Notion page with the specified title and content.
   expected_output: >
-    A well-organized note with all formatting instructions implemented and content properly structured.
-  agent: notes_organizer
-
-categorize_and_move:
-  description: >
-    Move the processed note to its proper location in Clean Notes:
-    1. Determine the appropriate category in Clean Notes
-    2. Create category subpage if it doesn't exist
-    3. Move the note to the correct location
-    4. Update any parent page structures and references
-  expected_output: >
-    Note properly categorized and moved to the correct location in Clean Notes, with all necessary 
-    structural updates completed.
-  agent: notes_organizer
-
-combine_related_notes:
-  description: >
-    Combine multiple related notes into a single well-organized page:
-    1. Identify notes with related content
-    2. Merge the content maintaining proper structure
-    3. Ensure no information is lost in the combination
-    4. Create clear sections to organize the combined content
-  expected_output: >
-    Related notes successfully combined into a single, well-organized page with all content preserved.
-  agent: notes_organizer
-
-cleanup_originals:
-  description: >
-    Clean up original notes after successful processing:
-    1. Verify the note was successfully moved/combined
-    2. Ensure all content was properly transferred
-    3. Delete the original note
-    4. Update any references or links
-  expected_output: >
-    Original notes safely deleted after confirming successful content transfer.
-  agent: notes_organizer
-
-manage_workspace:
-  description: >
-    Manage the overall Notion workspace organization:
-    1. Retrieve all subpages under Messy Notes (id: 17d9167955c8802bbb62f646e9e23318)
-    2. Coordinate the analysis and processing of each note
-    3. Track progress and ensure all notes are handled
-    4. Maintain organization in Clean Notes (id: 17d91679-55c8-80be-80b2-c10cba087012)
-  expected_output: >
-    Organized workspace with all notes properly processed, combined where appropriate, and 
-    stored in a clear structure within Clean Notes.
+    A new Notion page with the specified title and content.
   agent: notes_organizer

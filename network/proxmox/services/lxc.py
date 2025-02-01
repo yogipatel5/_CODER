@@ -173,3 +173,61 @@ class LXCService:
             List of log lines
         """
         return self.api.get_container_logs(node=node, vmid=vmid, limit=limit)
+
+    def list_templates(self, node: str = "pve", storage: str = "local") -> List[Dict]:
+        """List available LXC templates.
+
+        Args:
+            node: Name of the Proxmox node (default: "pve")
+            storage: Name of the storage to check (default: "local")
+
+        Returns:
+            List of template dictionaries with their information
+        """
+        try:
+            templates = self.api.list_templates(node=node, storage=storage)
+            logger.info(f"Found {len(templates)} LXC templates on node {node} in storage {storage}")
+            return templates
+        except Exception as e:
+            logger.error(f"Failed to list templates on node {node} storage {storage}: {str(e)}")
+            raise
+
+    def get_next_vmid(self) -> int:
+        """Get the next available VM ID.
+
+        Returns:
+            Next available VM ID that can be used for container creation
+        """
+        try:
+            vmid = self.api.get_next_vmid()
+            logger.info(f"Retrieved next available VM ID: {vmid}")
+            return vmid
+        except Exception as e:
+            logger.error(f"Failed to get next VM ID: {str(e)}")
+            raise
+
+    def exec_command(
+        self, node: str, vmid: int, command: str, args: List[str] = None, poll: bool = True, poll_interval: int = 2
+    ) -> Dict:
+        """Execute a command inside a container and optionally wait for completion.
+
+        Args:
+            node: Name of the Proxmox node
+            vmid: VM ID of the container
+            command: Command to execute inside the container
+            args: List of command arguments (default: None)
+            poll: Whether to poll until task completion (default: True)
+            poll_interval: Seconds between poll attempts (default: 2)
+
+        Returns:
+            Dictionary with command execution task information
+        """
+        try:
+            response = self.api.exec_command(
+                node=node, vmid=vmid, command=command, args=args, poll=poll, poll_interval=poll_interval
+            )
+            logger.info(f"Command execution completed in container {vmid} on node {node}")
+            return response
+        except Exception as e:
+            logger.error(f"Failed to execute command in container {vmid} on node {node}: {str(e)}")
+            raise

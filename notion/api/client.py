@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class NotionClient:
-    """Client for interacting with the Notion API."""
 
     # TODO: Implement proper rate limiting mechanism
     # TODO: Add retry logic for API calls

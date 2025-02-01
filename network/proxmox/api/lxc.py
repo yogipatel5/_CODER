@@ -1,6 +1,7 @@
 """API module for LXC container operations in Proxmox."""
 
 import logging
+import os
 from typing import Dict, List, Optional
 
 from network.proxmox.api.client import ProxmoxClient
@@ -208,4 +209,136 @@ class LXCAPI:
             return tasks
         except Exception as e:
             logger.error(f"Failed to get logs for container {vmid} on node {node}: {str(e)}")
+            raise
+
+    def list_templates(self, node: str = "pve", storage: str = "local") -> List[Dict]:
+        """List available LXC templates.
+
+        Args:
+            node: Name of the Proxmox node (default: "pve")
+            storage: Name of the storage to check (default: "local")
+
+        Returns:
+            List of template dictionaries with their information
+        """
+        try:
+            templates = self.client.nodes(node).storage(storage).content.get(content="vztmpl")
+            logger.info(f"Found {len(templates)} LXC templates on node {node} in storage {storage}")
+            return templates
+        except Exception as e:
+            logger.error(f"Failed to list templates on node {node} storage {storage}: {str(e)}")
+            raise
+
+    def get_next_vmid(self) -> int:
+        """Get the next available VM ID.
+
+        Returns:
+            Next available VM ID that can be used for container creation
+        """
+        try:
+            vmid = self.client.cluster.nextid.get()
+            logger.info(f"Retrieved next available VM ID: {vmid}")
+            return int(vmid)
+        except Exception as e:
+            logger.error(f"Failed to get next VM ID: {str(e)}")
+            raise
+
+    def exec_command(
+        self, node: str, vmid: int, command: str, args: List[str] = None, poll: bool = True, poll_interval: int = 2
+    ) -> Dict:
+        """Execute a command inside a container using SSH.
+
+        Args:
+            node: Name of the Proxmox node
+            vmid: VM ID of the container
+            command: Command to execute inside the container
+            args: List of command arguments (default: None)
+            poll: Whether to poll until task completion (default: True)
+            poll_interval: Seconds between poll attempts (default: 2)
+
+        Returns:
+            Dictionary with command output and status
+        """
+        try:
+            # Ensure args is a list
+            if args is None:
+                args = []
+
+            # Get Proxmox host from environment
+            proxmox_host = os.environ.get("PROXMOX_HOST")
+            if not proxmox_host:
+                raise Exception("PROXMOX_HOST environment variable not set")
+
+            # Extract hostname without port
+            proxmox_hostname = proxmox_host.split(":")[0]
+            if not proxmox_hostname:
+                raise Exception("Failed to extract hostname from PROXMOX_HOST")
+
+            # Construct the command
+            full_command = [command] + args if args else [command]
+            command_str = " ".join(f"'{arg}'" for arg in full_command)
+
+            # Create a shell script that will be executed on the remote host
+            script = f"""#!/bin/bash
+set -e
+exec 2>&1
+
+# Check container status
+echo "=== Container Status ==="
+pct status {vmid}
+status=$?
+if [ $status -ne 0 ]; then
+    echo "Container is not running"
+    exit 1
+fi
+
+# Execute command
+echo "=== Command Output ==="
+pct exec {vmid} -t -- {command_str}
+"""
+
+            logger.info(f"Executing command '{command}' with args {args} in container {vmid} on node {node}")
+            logger.info(f"Remote script: {script}")
+
+            # Execute command via SSH
+            import subprocess
+
+            ssh_command = ["ssh", "-tt", f"root@{proxmox_hostname}", "bash -s"]
+            logger.info(f"Running SSH command: {' '.join(ssh_command)}")
+
+            try:
+                result = subprocess.run(ssh_command, input=script, capture_output=True, text=True, check=True)
+                logger.info(f"Command output: {result.stdout}")
+                if result.stderr:
+                    logger.warning(f"Command stderr: {result.stderr}")
+
+                # Print debug info
+                logger.debug("Command result:")
+                logger.debug(f"  Return code: {result.returncode}")
+                logger.debug(f"  Stdout: {repr(result.stdout)}")
+                logger.debug(f"  Stderr: {repr(result.stderr)}")
+
+                # Extract command output (everything after "=== Command Output ===")
+                output_lines = result.stdout.split("\n")
+                command_output = []
+                in_command_output = False
+                for line in output_lines:
+                    if line == "=== Command Output ===":
+                        in_command_output = True
+                    elif in_command_output:
+                        command_output.append(line)
+
+                return {
+                    "status": "success",
+                    "output": "\n".join(command_output),
+                    "error": result.stderr if result.stderr else None,
+                }
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Command failed with exit code {e.returncode}")
+                logger.error(f"Command stdout: {e.stdout}")
+                logger.error(f"Command stderr: {e.stderr}")
+                raise Exception(f"Command failed: {e.stderr}")
+
+        except Exception as e:
+            logger.error(f"Failed to execute command in container {vmid} on node {node}: {str(e)}")
             raise
