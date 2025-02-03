@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class TaskManager(models.Manager):
     """Manager for handling task execution and error handling."""
 
-    def get_active_task(self, task_name: str) -> Optional["Tasks"]:
+    def get_active_task(self, task_name: str) -> Optional["Tasks"]:  # noqa
         """Get task configuration from the database."""
         try:
             task = self.get(name=task_name, is_active=True)
