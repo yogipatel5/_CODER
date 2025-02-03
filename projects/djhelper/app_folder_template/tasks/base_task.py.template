@@ -1,0 +1,36 @@
+"""Base task functionality for {{ app_name }}."""
+import logging
+from functools import wraps
+
+from celery import shared_task
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
+
+
+def task_wrapper(task_name: str):
+    """
+    Decorator for wrapping Celery tasks with common functionality.
+    
+    Usage:
+        @shared_task
+        @task_wrapper("my_task")
+        def my_task():
+            pass
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            logger.info(f"Starting task: {task_name}")
+            try:
+                result = func(*args, **kwargs)
+                logger.info(f"Task completed successfully: {task_name}")
+                return result
+            except Exception as e:
+                logger.error(f"Task failed: {task_name} - {str(e)}")
+                raise
+
+        return wrapper
+
+    return decorator

@@ -1,0 +1,4 @@
+"""
+Symlink to show_imports.py to support kebab-case command name.
+"""
+from {{ app_name }}.management.commands.show_imports import Command
