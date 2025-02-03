@@ -3,7 +3,7 @@ from pathlib import Path
 import yaml
 from django.core.management.base import BaseCommand
 
-from print.models.printer import Printer
+from print.models import Printer
 
 
 class Command(BaseCommand):

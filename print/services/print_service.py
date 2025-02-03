@@ -6,15 +6,12 @@ from typing import Optional
 import cups
 import requests
 
-from .usb_print_service import USBPrintService
-
 logger = logging.getLogger(__name__)
 
 
 class PrintService:
     def __init__(self):
         self.cups_conn = cups.Connection()
-        self.usb_service = USBPrintService()
 
     def print_job(self, job) -> Optional[int]:
         """Process a print job"""

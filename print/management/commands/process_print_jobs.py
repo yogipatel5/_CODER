@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from print.models import PrintJob
-from print.services.print_service import PrintService
+from print.services import print_service
 
 
 class Command(BaseCommand):
@@ -13,7 +13,7 @@ class Command(BaseCommand):
         parser.add_argument("--printer", type=str, help="Process jobs for a specific printer")
 
     def handle(self, *args, **options):
-        service = PrintService()
+        service = print_service.PrintService()
 
         # Get jobs to process
         jobs = PrintJob.objects.get_active_jobs()
