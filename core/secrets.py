@@ -22,7 +22,17 @@ class SecretsManager:
 
         try:
             # Get all secrets for the environment
-            for group in ["django", "database", "redis", "celery", "notion", "logfire", "proxmox", "deepseek"]:
+            for group in [
+                "django",
+                "database",
+                "redis",
+                "celery",
+                "notion",
+                "logfire",
+                "proxmox",
+                "deepseek",
+                "pfsense",
+            ]:
                 value = self.vault_service.read_secret(env, group)
                 if value:
                     self._secrets[group] = value

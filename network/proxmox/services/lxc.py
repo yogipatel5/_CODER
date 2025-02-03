@@ -99,6 +99,11 @@ class LXCService:
             logger.error(f"Failed to get status for container {vmid} on node {node}: {str(e)}")
             raise
 
+    def get_container_config(self, node: str, vmid: int) -> Dict:
+        """Get container configuration."""
+        logger.info(f"Retrieved config for container {vmid} on node {node}")
+        return self.api.get_container_config(node=node, vmid=vmid)
+
     def start_container(self, node: str, vmid: int) -> Dict:
         """Start a container.
 
@@ -117,23 +122,21 @@ class LXCService:
             logger.error(f"Failed to start container {vmid} on node {node}: {str(e)}")
             raise
 
-    def stop_container(self, node: str, vmid: int) -> Dict:
-        """Stop a container immediately.
+    def stop_container(self, vmid: int) -> None:
+        """Stop a container.
 
         Args:
-            node: Name of the Proxmox node
-            vmid: VM ID of the container (e.g., 101 for postgresql)
-
-        Returns:
-            Dictionary with stop task information
+            vmid: ID of the container
         """
-        try:
-            result = self.api.stop_container(node=node, vmid=vmid)
-            logger.info(f"Stopped container {vmid} on node {node}")
-            return result
-        except Exception as e:
-            logger.error(f"Failed to stop container {vmid} on node {node}: {str(e)}")
-            raise
+        self.api.stop_container(vmid)
+
+    def restart_container(self, vmid: int) -> None:
+        """Restart a container.
+
+        Args:
+            vmid: ID of the container
+        """
+        self.api.restart_container(vmid)
 
     def shutdown_container(self, node: str, vmid: int, timeout: Optional[int] = None) -> Dict:
         """Shutdown a container gracefully.
@@ -231,3 +234,14 @@ class LXCService:
         except Exception as e:
             logger.error(f"Failed to execute command in container {vmid} on node {node}: {str(e)}")
             raise
+
+    def configure_network(self, vmid: int, net0: str = "name=eth0,bridge=vmbr0,ip=dhcp") -> None:
+        """Configure network interface for LXC container.
+
+        Args:
+            vmid: ID of the container
+            net0: Network interface configuration string
+                 Format: name=<name>,bridge=<bridge>,ip=<ip>
+                 Example: name=eth0,bridge=vmbr0,ip=dhcp
+        """
+        self.api.configure_network(vmid, net0)

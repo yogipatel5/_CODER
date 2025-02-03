@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 secrets_manager.load_secrets()
 
 # Set up debug logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Load secrets and check what we got
 secrets_manager.load_secrets()

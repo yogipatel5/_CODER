@@ -11,6 +11,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+pf-sense-rest-api-documentation-client
 eggs/
 .eggs/
 lib/

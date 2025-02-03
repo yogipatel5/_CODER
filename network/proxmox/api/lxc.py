@@ -99,6 +99,24 @@ class LXCAPI:
             logger.error(f"Failed to get status for container {vmid} on node {node}: {str(e)}")
             raise
 
+    def get_container_config(self, node: str, vmid: int) -> Dict:
+        """Get container configuration.
+
+        Args:
+            node: Name of the Proxmox node
+            vmid: VM ID of the container
+
+        Returns:
+            Dictionary with container configuration information
+        """
+        try:
+            config = self.client.nodes(node).lxc(vmid).config.get()
+            logger.info(f"Retrieved config for container {vmid} on node {node}")
+            return config
+        except Exception as e:
+            logger.error(f"Failed to get config for container {vmid} on node {node}: {str(e)}")
+            raise
+
     def start_container(self, node: str, vmid: int) -> Dict:
         """Start a container.
 
@@ -117,22 +135,42 @@ class LXCAPI:
             logger.error(f"Failed to start container {vmid} on node {node}: {str(e)}")
             raise
 
-    def stop_container(self, node: str, vmid: int) -> Dict:
+    def stop_container(self, vmid: int) -> None:
         """Stop a container.
 
         Args:
-            node: Name of the Proxmox node
-            vmid: VM ID of the container
-
-        Returns:
-            Dictionary with stop task information
+            vmid: ID of the container
         """
         try:
-            result = self.client.nodes(node).lxc(vmid).status.stop.post()
-            logger.info(f"Stopped container {vmid} on node {node}")
-            return result
+            # Get the node where the container is running
+            nodes = self.client.nodes.get()
+            if not nodes:
+                raise ValueError("No nodes found")
+            node = self.client.nodes(nodes[0]["node"])
+
+            container = node.lxc(vmid)
+            container.status.stop.post()
         except Exception as e:
-            logger.error(f"Failed to stop container {vmid} on node {node}: {str(e)}")
+            logger.error(f"Failed to stop container {vmid}: {str(e)}")
+            raise
+
+    def restart_container(self, vmid: int) -> None:
+        """Restart a container.
+
+        Args:
+            vmid: ID of the container
+        """
+        try:
+            # Get the node where the container is running
+            nodes = self.client.nodes.get()
+            if not nodes:
+                raise ValueError("No nodes found")
+            node = self.client.nodes(nodes[0]["node"])
+
+            container = node.lxc(vmid)
+            container.status.restart.post()
+        except Exception as e:
+            logger.error(f"Failed to restart container {vmid}: {str(e)}")
             raise
 
     def shutdown_container(self, node: str, vmid: int, timeout: Optional[int] = None) -> Dict:
@@ -170,7 +208,7 @@ class LXCAPI:
             if force:
                 # Stop the container first if forcing deletion
                 try:
-                    self.stop_container(node, vmid)
+                    self.stop_container(vmid)
                 except Exception:
                     # Ignore stop errors when force deleting
                     pass
@@ -264,10 +302,10 @@ class LXCAPI:
             if args is None:
                 args = []
 
-            # Get Proxmox host from environment
-            proxmox_host = os.environ.get("PROXMOX_HOST")
+            # Get Proxmox host from getenvment
+            proxmox_host = os.getenv("PROXMOX_HOST")
             if not proxmox_host:
-                raise Exception("PROXMOX_HOST environment variable not set")
+                raise Exception("PROXMOX_HOST getenvment variable not set")
 
             # Extract hostname without port
             proxmox_hostname = proxmox_host.split(":")[0]
@@ -341,4 +379,26 @@ pct exec {vmid} -t -- {command_str}
 
         except Exception as e:
             logger.error(f"Failed to execute command in container {vmid} on node {node}: {str(e)}")
+            raise
+
+    def configure_network(self, vmid: int, net0: str = "name=eth0,bridge=vmbr0,ip=dhcp") -> None:
+        """Configure network interface for LXC container.
+
+        Args:
+            vmid: ID of the container
+            net0: Network interface configuration string
+                 Format: name=<name>,bridge=<bridge>,ip=<ip>
+                 Example: name=eth0,bridge=vmbr0,ip=dhcp
+        """
+        try:
+            # Get the node where the container is running
+            nodes = self.client.nodes.get()
+            if not nodes:
+                raise ValueError("No nodes found")
+            node = self.client.nodes(nodes[0]["node"])
+
+            container = node.lxc(vmid)
+            container.config.put(net0=net0)
+        except Exception as e:
+            logger.error(f"Failed to configure network for container {vmid}: {str(e)}")
             raise

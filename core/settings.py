@@ -48,7 +48,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Get Django core settings from Vault
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Get Redis settings from environment variables
@@ -93,11 +93,12 @@ INSTALLED_APPS = [
     "alfie.apps.AlfieConfig",
     "core.apps.CoreConfig",
     "projects.django.apps.CreateAppConfig",
+    "notifier.apps.NotifierConfig",
     # "projects.apps.ProjectsConfig",
     # "projects.github.apps.GithubConfig",
     "projects.vault.apps.VaultConfig",
     "notion.apps.NotionConfig",  # Temporarily disabled until models are set up
-    "network.pfsense.apps.PfsenseConfig",
+    "pfsense.apps.PfsenseConfig",
     "system.apps.SystemConfig",
     "network.proxmox.apps.ProxmoxConfig",
     "print.apps.PrintConfig",  # Print app for document generation
