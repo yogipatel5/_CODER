@@ -1,5 +1,4 @@
 """Base task functionality for {{ app_name }}."""
-import logging
 from functools import wraps
 
 from celery import shared_task
