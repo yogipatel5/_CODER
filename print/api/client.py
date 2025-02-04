@@ -4,8 +4,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from .exceptions import raise_for_status_code
-
 logger = logging.getLogger(__name__)
 
 

@@ -4,7 +4,7 @@ This directory contains management commands for the print app. Commands are orga
 
 ## Command Structure
 
-```
+```text
 management/
 ├── __init__.py
 └── commands/

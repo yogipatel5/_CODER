@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import SET_NULL, OneToOneField
-from django.utils import timezone
 
 from print.managers.task import TaskManager
 from print.models.base_model import BaseModel

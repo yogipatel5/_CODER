@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 
+@shared_task
 def task_wrapper(task_name: str):
     """
     Decorator for wrapping Celery tasks with common functionality.

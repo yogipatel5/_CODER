@@ -1,3 +1,4 @@
+# trunk-ignore-all(bandit/B404)
 import subprocess
 
 from django.core.management.base import BaseCommand
@@ -19,7 +20,11 @@ class Command(BaseCommand):
     def _get_printer_info(self, printer_name):
         """Get detailed printer info using lpoptions"""
         try:
-            result = subprocess.run(["lpoptions", "-p", printer_name, "-l"], capture_output=True, text=True, check=True)
+            # trunk-ignore(bandit/B603)
+            # trunk-ignore(bandit/B607)
+            result = subprocess.run(
+                ["lpoptions", "-p", printer_name, "-l"], capture_output=True, text=True, check=True
+            )  # noqa: S603
             options = {}
             for line in result.stdout.split("\n"):
                 if not line:
@@ -33,6 +38,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Get list of printers
+        # trunk-ignore(bandit/B603)
+        # trunk-ignore(bandit/B607)
         result = subprocess.run(["lpstat", "-p", "-d"], capture_output=True, text=True)
 
         # Get default printer

@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
 
 logger = logging.getLogger(__name__)
 

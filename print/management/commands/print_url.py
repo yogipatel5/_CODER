@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 with open(file_path, "rb") as file:
                     file_data = file.read()
             else:
-                response = requests.get(url, stream=True)
+                response = requests.get(url, stream=True, timeout=30)
                 response.raise_for_status()
 
                 # Get content type and filename

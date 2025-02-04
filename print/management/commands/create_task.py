@@ -1,4 +1,3 @@
-from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 from print.management.commands._base import print_HelperCommand
