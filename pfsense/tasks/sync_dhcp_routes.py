@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
 from pfsense.models.dhcproute import DHCPRoute
-from pfsense.models.task import Tasks
+from pfsense.models.task import Task
 from pfsense.services.dhcp_server import DHCPServerService
 
 logger = get_task_logger(__name__)
@@ -21,58 +21,57 @@ def notify_error(task_name, error_message):
 
 
 @shared_task
-@Tasks.objects.create_task_wrapper("sync_dhcp_routes")
+@Task.objects.create_task_wrapper("sync_dhcp_routes")
 def sync_dhcp_routes():
-    """Sync DHCP routes from pfSense to local database"""
-    task = Tasks.objects.get(name="sync_dhcp_routes")
+    """Sync DHCP routes from pfSense to local database.
 
+    Returns:
+        int: Number of routes synced, or None if error
+    """
+    logger.info("Starting DHCP routes sync")
     try:
-        logger.info("Starting DHCP routes sync")
         service = DHCPServerService()
-        routes = service.get_all()
-        logger.info(f"Found {len(routes)} routes to sync")
 
-        synced_count = 0
-        for route in routes:
-            try:
-                route_type = "dynamic" if route.active_status == "active" else "static"
-                logger.info(f"Syncing {route_type} route: {route.ip} ({route.hostname or 'No hostname'})")
+        # Get routes from pfSense
+        pfsense_routes = service.get_dhcp_routes()
+        if not pfsense_routes:
+            logger.warning("No routes returned from pfSense")
+            return None
 
-                DHCPRoute.objects.update_or_create(
-                    pfsense_id=str(route.id),
-                    defaults={
-                        "network": route.ip,
-                        "gateway": route.mac,
-                        "description": route.descr or "",
-                        "hostname": route.hostname,
-                        "disabled": route.active_status != "active",
-                        "route_type": route_type,
-                        "last_synced": timezone.now(),
-                    },
-                )
-                synced_count += 1
-            except Exception as e:
-                error_msg = f"Error syncing route {route.ip}: {str(e)}"
-                logger.error(error_msg)
-                if task.notify_on_error:
-                    notify_error("sync_dhcp_routes", error_msg)
-                continue
+        # Update local database
+        for route in pfsense_routes:
+            DHCPRoute.objects.update_or_create(
+                network=route["network"],
+                defaults={
+                    "gateway": route["gateway"],
+                    "subnet": route["subnet"],
+                    "last_sync": timezone.now(),
+                },
+            )
 
-        logger.info(f"Successfully synced {synced_count} DHCP routes")
-        task.last_run = timezone.now()
-        task.save()
-        return synced_count
+        count = len(pfsense_routes)
+        logger.info(f"Successfully synced {count} routes")
+        return count
 
     except Exception as e:
-        error_msg = f"DHCP route sync failed: {str(e)}"
+        error_msg = f"Failed to sync DHCP routes: {str(e)}"
         logger.error(error_msg)
 
-        if task.notify_on_error:
-            notify_error("sync_dhcp_routes", error_msg)
+        try:
+            task = Task.objects.get(name="sync_dhcp_routes")
+            task.last_status = "error"
+            task.last_error = error_msg
+            task.last_run = timezone.now()
 
-        if task.disable_on_error:
-            task.is_active = False
+            if task.notify_on_error:
+                notify_error("sync_dhcp_routes", error_msg)
+
+            if task.disable_on_error:
+                task.is_active = False
+                logger.info("Task disabled due to error")
+
             task.save()
-            logger.info("Task disabled due to error")
+        except Exception as inner_e:
+            logger.error(f"Failed to update task status: {str(inner_e)}")
 
-        raise  # Re-raise the exception for Celery to handle retries
+        return None
