@@ -76,4 +76,4 @@ unfixable = ["F", "E", "W"] # Don't auto-fix these, just warn
 
 [tool.ruff.isort]
 combine-as-imports = true
-lines-after-imports = 1
+lines-after-imports = 2
