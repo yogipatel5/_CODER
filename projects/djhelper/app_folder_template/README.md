@@ -4,7 +4,7 @@ This app is registered with Django.
 
 ## Project Structure
 
-```
+```text
 {{ app_name }}/
 ├── README.md                  # This file
 ├── __init__.py               # Package initialization
@@ -203,7 +203,7 @@ The API package handles external API integrations and provides internal APIs:
 
 1. **API Client Structure**:
 
-   ```
+   ```text
    api/
    ├── __init__.py
    ├── client.py          # Base API client

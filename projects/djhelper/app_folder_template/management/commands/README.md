@@ -4,7 +4,7 @@ This directory contains management commands for the {{ app_name }} app. Commands
 
 ## Command Structure
 
-```
+```text
 management/
 ├── __init__.py
 └── commands/
