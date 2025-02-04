@@ -1,9 +1,9 @@
 # Boiler plate task for sending notifications
 import logging
 
-PRIORTY_LOW = "low"
-PRIORTY_MEDIUM = "medium"
-PRIORTY_HIGH = "high"
+PRIORITY_LOW = "low"
+PRIORITY_MEDIUM = "medium"
+PRIORITY_HIGH = "high"
 
 logger = logging.getLogger(__name__)
 

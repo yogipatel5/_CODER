@@ -11,7 +11,7 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(log_color)s%(levelname)-8s%(reset)s %(blue)s%(asctime)s%(reset)s %(white)s%(name)s%(reset)s %(message)s",
+            "format": "%(log_color)s%(levelname)-8s%(reset)s %(blue)s%(asctime)s%(reset)s %(white)s%(name)s%(reset)s %(message)s",  # noqa
             "log_colors": {
                 "DEBUG": "cyan",
                 "INFO": "green",

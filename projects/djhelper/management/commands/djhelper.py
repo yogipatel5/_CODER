@@ -65,4 +65,7 @@ class Command(BaseCommand):
 
         # Create and run the command
         cmd = cmd_class()
-        cmd.run_from_argv(["manage.py"] + options["args"])
+
+        # Extract all options except 'subcommand' and pass them to the command
+        cmd_options = {k: v for k, v in options.items() if k != "subcommand"}
+        cmd.execute(**cmd_options)

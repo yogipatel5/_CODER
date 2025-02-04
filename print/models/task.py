@@ -1,28 +1,26 @@
 from django.db import models
+from django.db.models import SET_NULL, OneToOneField
 from django.utils import timezone
-from django_celery_beat.models import PeriodicTask
 
-from ..managers.task import TaskManager
+from print.managers.task import TaskManager
+from print.models.base_model import BaseModel
 
 
-class Task(models.Model):
+class Task(BaseModel):
     """Model for managing Celery tasks in the print app."""
 
     name = models.CharField(max_length=255, unique=True, help_text="Name of the task")
     description = models.TextField(blank=True, help_text="Description of what this task does")
 
     # Task settings
-    is_active = models.BooleanField(default=True, help_text="Whether this task is enabled")
     notify_on_error = models.BooleanField(default=False, help_text="Whether to send notifications on errors")
     disable_on_error = models.BooleanField(default=False, help_text="Whether to disable task on errors")
     max_retries = models.IntegerField(default=3, help_text="Maximum number of retry attempts")
 
     # Schedule settings (for periodic tasks)
     schedule = models.CharField(max_length=100, blank=True, help_text="Crontab or interval schedule")
-    last_run = models.DateTimeField(null=True, blank=True)
+    last_run = models.DateTimeField(null=True, blank=True, help_text="Last time the task was run")
     next_run = models.DateTimeField(null=True, blank=True, help_text="Next scheduled run time")
-
-    # Execution results
     last_status = models.CharField(
         max_length=20,
         choices=[("success", "Success"), ("error", "Error")],
@@ -30,16 +28,20 @@ class Task(models.Model):
         blank=True,
         help_text="Status of the last execution",
     )
-    last_result = models.JSONField(null=True, blank=True, help_text="Results from last successful execution")
+
+    # Execution results
+    last_result = models.JSONField(
+        null=True, blank=True, help_text="Results from last successful execution (e.g., number of items synced)"
+    )
     last_error = models.TextField(blank=True, help_text="Error message from last failed execution")
 
     # Link to Django Celery Beat's PeriodicTask
-    periodic_task = models.OneToOneField(
-        PeriodicTask,
-        on_delete=models.SET_NULL,
+    periodic_task = OneToOneField(
+        "django_celery_beat.PeriodicTask",
+        on_delete=SET_NULL,
         null=True,
         blank=True,
-        related_name="print_task",
+        related_name="%(app_label)s_task",
         help_text="Associated periodic task in Django Celery Beat",
     )
 
@@ -51,13 +53,16 @@ class Task(models.Model):
     objects = TaskManager()
 
     class Meta:
-        verbose_name = "Task"
-        verbose_name_plural = "Tasks"
+        ordering = ["name"]
 
     def __str__(self):
-        return f"{self.name} ({self.schedule})"
+        return f"{self.name} ({'active' if self.is_active else 'inactive'})"
 
     def save(self, *args, **kwargs):
         if self.periodic_task:
-            self.next_run = self.periodic_task.next_run_at
+            # Update next_run from the periodic task
+            if self.periodic_task.enabled:
+                self.next_run = self.periodic_task.next_run_at
+            else:
+                self.next_run = None
         super().save(*args, **kwargs)

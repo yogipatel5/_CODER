@@ -81,9 +81,29 @@ CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "America/New_York")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+
+# Jazzmin Settings
+JAZZMIN_SETTINGS = {
+    # title of the window (Will default to current_admin_site.site_title if absent or None)
+    "site_title": "Admin Portal",
+    # Title on the login screen (19 chars max) (will default to current_admin_site.site_header if absent or None)
+    "site_header": "Admin",
+    # Title on the brand (19 chars max) (will default to current_admin_site.site_header if absent or None)
+    "site_brand": "Admin Portal",
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to the Admin Portal",
+    # Copyright on the footer
+    "copyright": "Your Company",
+    # The model admin to search from the search bar
+    "search_model": "auth.User",
+    # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
+    "user_avatar": None,
+}
+
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -92,7 +112,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "alfie.apps.AlfieConfig",
     "core.apps.CoreConfig",
-    "projects.django.apps.CreateAppConfig",
+    "projects.djhelper.apps.DJHelperAppConfig",
     "notifier.apps.NotifierConfig",
     # "projects.apps.ProjectsConfig",
     # "projects.github.apps.GithubConfig",

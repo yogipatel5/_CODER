@@ -6,12 +6,14 @@
   "editor.wordWrapColumn": 125,
   "[python]": {
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit",
-      "source.fixAll": "explicit"
+      "source.fixAll": "always",
+      "source.organizeImports.ruff": "always"
     },
     "editor.defaultFormatter": "trunk.io",
     "editor.formatOnSave": true
   },
+  "ruff.organizeImports": false,
+  "ruff.fixAll": false,
   "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
   "files.exclude": {
     "**/.git": true,

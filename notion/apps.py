@@ -68,13 +68,11 @@ class NotionConfig(AppConfig):
 
     def ready(self):
         """Initialize the application by importing all required modules and setting up periodic tasks."""
-        # Import signals
-        from notion import signals  # noqa
-
-        # Import all admin, models and task modules
+        # Import all admin, models, tasks, and signal modules
         self._import_modules_from_directory("admin")
         self._import_modules_from_directory("models")
         self._import_modules_from_directory("tasks")
+        self._import_modules_from_directory("signals")
 
         # Connect the post_migrate signal handler
         post_migrate.connect(setup_periodic_tasks, sender=self)

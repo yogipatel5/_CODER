@@ -1,3 +1,5 @@
+# Do not import models here, they are being autoloaded by apps.py
+
 import importlib
 import inspect
 from pathlib import Path

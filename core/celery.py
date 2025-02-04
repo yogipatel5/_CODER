@@ -28,10 +28,6 @@ app = Celery("core")
 # the configuration object to child processes.
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# Debug logging after configuration
-logger.debug("Final Celery Configuration:")
-logger.debug(f"Broker URL: {app.conf.broker_url}")
-logger.debug(f"Result Backend: {app.conf.result_backend}")
 
 # Auto-discover tasks in all installed apps
 app.autodiscover_tasks()
