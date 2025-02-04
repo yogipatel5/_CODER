@@ -5,8 +5,6 @@ import inspect
 import logging
 from pathlib import Path
 
-from celery import shared_task
-
 logger = logging.getLogger(__name__)
 
 # Get all .py files in the tasks directory

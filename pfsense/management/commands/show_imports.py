@@ -3,8 +3,9 @@ Show all auto-discovered models, tasks, and signals in the pfsense app.
 """
 
 import inspect
-from django.core.management.base import BaseCommand
+
 from django.apps import apps
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

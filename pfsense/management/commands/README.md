@@ -4,7 +4,7 @@ This directory contains management commands for the pfsense app. Commands are or
 
 ## Command Structure
 
-```
+```text
 management/
 ├── __init__.py
 └── commands/

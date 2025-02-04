@@ -1,8 +1,7 @@
-from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
-from pfsense.models.task import Task
 from pfsense.management.commands._base import pfsense_HelperCommand
+from pfsense.models.task import Task
 
 
 class Command(pfsense_HelperCommand):
