@@ -1,5 +1,5 @@
 [project]
-name = "notion-ai-agent"
+name = "CODER"
 version = "0.1.0"
 description = "AI-powered Notion agent using Pydantic"
 requires-python = ">=3.11"
@@ -57,23 +57,3 @@ extend-exclude = '''
 [tool.isort]
 profile = "black"
 multi_line_output = 3
-
-[tool.ruff]
-line-length = 120
-fix = true # Enable auto-fixing
-unsafe-fixes = false # Don't make potentially unsafe fixes
-extend-select = [
-  "I", # isort
-  "F", # pyflakes
-  "E", # pycodestyle errors
-  "W", # pycodestyle warnings
-]
-fixable = ["I"] # Only auto-fix import sorting
-unfixable = ["F", "E", "W"] # Don't auto-fix these, just warn
-
-[tool.ruff.per-file-ignores]
-"**/*.py" = [] # No ignores, so we'll see all warnings
-
-[tool.ruff.isort]
-combine-as-imports = true
-lines-after-imports = 2
