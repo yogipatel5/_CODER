@@ -1,0 +1,14 @@
+line-length: 120
+fix: true
+unsafe-fixes: false
+extend-select:
+  - I # isort
+  - F # pyflakes
+  - E # pycodestyle errors
+  - W # pycodestyle warnings
+fixable: [I]
+unfixable: [F, E, W]
+
+isort:
+  combine-as-imports: true
+  lines-after-imports: 2

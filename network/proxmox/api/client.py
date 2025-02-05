@@ -62,8 +62,6 @@ class ProxmoxClient:
             logger.debug(f"Token secret present: {'yes' if self.token_secret else 'no'}")
 
             # Create API token auth string
-            token = f"{self.token_name}={self.token_secret}"
-
             self._client = ProxmoxAPI(
                 host=self.host,
                 user=self.user,
