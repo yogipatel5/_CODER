@@ -3,8 +3,10 @@
 from django.db import models
 from django.db.models import SET_NULL, OneToOneField
 
+from shared.managers import SharedTaskManager
 
-class BaseTask(models.Model):
+
+class SharedTask(models.Model):
     """Base model for all task models across apps."""
 
     name = models.CharField(max_length=255, unique=True, help_text="Name of the task")
@@ -45,6 +47,8 @@ class BaseTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = SharedTaskManager()
+
     class Meta:
         abstract = True
 
@@ -52,14 +56,33 @@ class BaseTask(models.Model):
         return self.name
 
     @property
+    def last_run_display(self):
+        """Get a human-readable string of when the task last ran."""
+        return type(self).objects.get_last_run_display(self)
+
+    @property
+    def next_run_display(self):
+        """Get a human-readable string of when the task will next run."""
+        return type(self).objects.get_next_run_display(self)
+
+    @property
     def next_run(self):
         """Get the next scheduled run time from the periodic task."""
-        if not self.periodic_task or not self.is_active:
-            return None
+        return type(self).objects.get_next_run(self)
 
-        try:
-            if hasattr(self.periodic_task.schedule, "next"):
-                return self.periodic_task.schedule.next()
-            return None
-        except Exception:
-            return None
+    @property
+    def error_count_display(self):
+        """Get a display string for the number of active errors."""
+        return type(self).objects.get_error_count_display(self)
+
+    def save(self, *args, **kwargs):
+        """Save the task and update its periodic task if needed."""
+        type(self).objects.save_and_update_periodic_task(self, *args, **kwargs)
+
+    def disable(self):
+        """Disable the task."""
+        type(self).objects.disable(self)
+
+    def run(self):
+        """Run the task immediately."""
+        return type(self).objects.run_task(self)

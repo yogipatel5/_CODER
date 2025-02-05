@@ -3,9 +3,25 @@
 from django.db import models
 from django.utils import timezone
 
+from shared.managers import SharedTaskErrorManager
+from shared.models.shared_task import SharedTask
 
-class BaseTaskError(models.Model):
+
+class SharedTaskError(models.Model):
     """Base model for tracking task errors with Sentry-like functionality."""
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"  # Created on the last run
+        ONGOING = "ongoing", "Ongoing"  # Happened again on subsequent runs
+        REGRESSED = "regressed", "Regressed"  # Didn't happen on last run but happened before
+        CLEARED = "cleared", "Cleared"  # Manually cleared by user
+
+    task = models.ForeignKey(
+        SharedTask,
+        on_delete=models.CASCADE,
+        related_name="errors",
+        help_text="Task that generated this error",
+    )
 
     error_message = models.TextField(help_text="Full error message")
     error_type = models.CharField(
@@ -35,6 +51,12 @@ class BaseTaskError(models.Model):
         auto_now=True,
         help_text="When this error was last seen",
     )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+        help_text="Current status of the error",
+    )
     cleared = models.BooleanField(
         default=False,
         help_text="Whether this error has been cleared",
@@ -53,6 +75,8 @@ class BaseTaskError(models.Model):
         help_text="User who cleared this error",
     )
 
+    objects = SharedTaskErrorManager()
+
     class Meta:
         abstract = True
         ordering = ["-last_seen"]
@@ -66,36 +90,5 @@ class BaseTaskError(models.Model):
         self.cleared = True
         self.cleared_at = timezone.now()
         self.cleared_by = user
+        self.status = self.Status.CLEARED
         self.save()
-
-    @classmethod
-    def log_error(cls, task, error, traceback):
-        """Log an error, creating a new record or updating an existing one."""
-        # Extract error information from traceback
-        tb = traceback.tb_next  # Skip the current frame
-        frame = tb.tb_frame
-        error_type = error.__class__.__name__
-        file_path = frame.f_code.co_filename
-        function_name = frame.f_code.co_name
-        line_number = tb.tb_lineno
-
-        # Try to find an existing error
-        error_obj, created = cls.objects.get_or_create(
-            task=task,
-            error_type=error_type,
-            file_path=file_path,
-            function_name=function_name,
-            line_number=line_number,
-            cleared=False,
-            defaults={
-                "error_message": str(error),
-            },
-        )
-
-        if not created:
-            # Update existing error
-            error_obj.occurrence_count += 1
-            error_obj.last_seen = timezone.now()
-            error_obj.save()
-
-        return error_obj
