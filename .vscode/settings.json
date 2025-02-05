@@ -46,8 +46,7 @@
     "system/__pycache__": true,
     ".env.sample": true,
     "notion/management/__pycache__": true,
-    "**/__pycache__": true,
-    "**/__init__.py": true
+    "**/__pycache__": true
   },
   "workbench.iconTheme": "material-icon-theme",
   "material-icon-theme.folders.associations": {
