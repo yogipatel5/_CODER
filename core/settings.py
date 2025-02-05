@@ -103,6 +103,7 @@ JAZZMIN_SETTINGS = {
 # Application definition
 
 INSTALLED_APPS = [
+    "shared",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",

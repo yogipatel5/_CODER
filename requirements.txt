@@ -1,4 +1,4 @@
--r prod.txt
+-r _prod.txt
 
 # Development dependencies (only needed for local development)
 -r dev.txt

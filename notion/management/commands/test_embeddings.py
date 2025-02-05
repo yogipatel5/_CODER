@@ -33,10 +33,10 @@ class Command(BaseCommand):
                             "href": None,
                             "text": {
                                 "link": None,
-                                "content": "Notey: Can you please reoganize this and make it clearer and implement some mermaid as well - Remove from here once done and move to a new page under ",
+                                "content": "Notey: Can you please reoganize this and make it clearer and implement some mermaid as well Remove from here once done and move to a new page under ",  # noqa: E501
                             },
                             "type": "text",
-                            "plain_text": "Notey: Can you please reoganize this and make it clearer and implement some mermaid as well - Remove from here once done and move to a new page under ",
+                            "plain_text": "Notey: Can you please reoganize this and make it clearer and implement some mermaid as well Remove from here once done and move to a new page under ",  # noqa: E501
                             "annotations": {
                                 "bold": False,
                                 "code": False,

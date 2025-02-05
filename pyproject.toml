@@ -44,16 +44,42 @@ markers = [
   "tools: marks tests for code tools",
 ]
 
-[tool.black]
-line-length = 120
-target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-# A regex preceded with ^/ will apply only to files and directories
-# in the root of the project.
-^/build
-'''
-
 [tool.isort]
 profile = "black"
-multi_line_output = 3
+line_length = 120
+known_first_party = ["CODER"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+[tool.ruff.lint]
+fixable = ["E", "F", "I001"]
+ignore = ["E501"]
+select = ["E", "F", "I"]
+unfixable = ["F401"]
+
+
+[tool.ruff]
+line-length = 120
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "W",   # pycodestyle warnings
+  "UP",  # pyupgrade
+  "I",   # isort
+  "C4",  # flake8-comprehensions
+  "B",   # flake8-bugbear
+  "A",   # flake8-builtins
+  "PL",  # pylint
+  "RUF", # ruff-specific rules
+]
+fixable = ["ALL"]
+unfixable = []
+ignore = []
+
+[tool.ruff.isort]
+known-first-party = ["CODER"]
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "auto"
