@@ -20,8 +20,7 @@ def notify_error(task_name, error_message):
     )
 
 
-@shared_task
-@Task.objects.create_task_wrapper("sync_dhcp_routes")
+@shared_task(name="pfsense.tasks.sync_dhcp_routes")
 def sync_dhcp_routes():
     """Sync DHCP routes from pfSense to local database.
 
@@ -30,27 +29,54 @@ def sync_dhcp_routes():
     """
     logger.info("Starting DHCP routes sync")
     try:
+        # Get task configuration
+        task = Task.objects.get(name="sync_dhcp_routes")
+        if not task.is_active:
+            logger.warning("Task is not active, skipping execution")
+            return None
+
         service = DHCPServerService()
 
         # Get routes from pfSense
-        pfsense_routes = service.get_dhcp_routes()
+        pfsense_routes = service.get_all()
+        logger.debug(f"Raw response: {pfsense_routes}")
         if not pfsense_routes:
             logger.warning("No routes returned from pfSense")
             return None
 
         # Update local database
         for route in pfsense_routes:
-            DHCPRoute.objects.update_or_create(
-                network=route["network"],
-                defaults={
-                    "gateway": route["gateway"],
-                    "subnet": route["subnet"],
-                    "last_sync": timezone.now(),
-                },
-            )
+            try:
+                # Get a valid gateway - either the interface IP or a default
+                gateway = route.ip  # Use the IP as gateway since we don't have a better option
+
+                DHCPRoute.objects.update_or_create(
+                    pfsense_id=str(route.id),  # Use the pfSense ID as unique identifier
+                    defaults={
+                        "network": route.ip,  # Using IP as network
+                        "gateway": gateway,  # Using IP as gateway since we need a valid IP
+                        "subnet": getattr(route, "subnet", "24"),  # Default to /24 if not provided
+                        "hostname": route.hostname or "",  # Empty string if None
+                        "description": route.descr or "",  # Empty string if None
+                        "route_type": "dynamic",
+                        "last_synced": timezone.now(),
+                    },
+                )
+            except (AttributeError, KeyError) as e:
+                logger.error(f"Error processing route {route}: {str(e)}")
 
         count = len(pfsense_routes)
         logger.info(f"Successfully synced {count} routes")
+
+        # Update task status
+        task.last_status = "success"
+        task.last_result = {"count": count}
+        task.last_run = timezone.now()
+        task.save()
+
+        # Update error statuses using manager
+        task.errors.update_regressed_errors(task)
+
         return count
 
     except Exception as e:
@@ -62,6 +88,11 @@ def sync_dhcp_routes():
             task.last_status = "error"
             task.last_error = error_msg
             task.last_run = timezone.now()
+
+            # Log error using manager
+            import sys
+
+            task.errors.log_error(task, e, sys.exc_info()[2])
 
             if task.notify_on_error:
                 notify_error("sync_dhcp_routes", error_msg)
