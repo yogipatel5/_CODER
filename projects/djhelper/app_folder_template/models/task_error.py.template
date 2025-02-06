@@ -1,22 +1,25 @@
-"""Task error model for tracking errors in the pfsense app."""
-
 from django.db import models
+from django.utils import timezone
 
-from pfsense.models.task import Task
-from shared.models import BaseTaskError
+from shared.models import SharedTaskError
 
 
-class TaskError(BaseTaskError):
-    """Model for tracking task errors in the pfsense app."""
+class TaskError(SharedTaskError):
+    """Model for tracking task errors in the {app_name} app."""
 
+    # Link to Task model
     task = models.ForeignKey(
-        Task,
+        "Task",
         on_delete=models.CASCADE,
         related_name="errors",
         help_text="Task that generated this error",
     )
 
-    class Meta(BaseTaskError.Meta):
-        app_label = "pfsense"
+    class Meta(SharedTaskError.Meta):
+        app_label = "{app_name}"
         verbose_name = "Task Error"
         verbose_name_plural = "Task Errors"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.task.name} - {self.error_message[:50]}..."
