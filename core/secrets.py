@@ -59,23 +59,23 @@ class SecretsManager:
         except Exception as e:
             logger.error(f"Error loading secrets: {e}")
 
-    def get_secret(self, key: str) -> Optional[str]:
-        """Get a secret by its key.
+    # def get_secret(self, key: str) -> Optional[str]:
+    #     """Get a secret by its key.
 
-        Args:
-            key: The key in format 'GROUP_NAME' or 'GROUP_KEY'
+    #     Args:
+    #         key: The key in format 'GROUP_NAME' or 'GROUP_KEY'
 
-        Returns:
-            The secret value or None if not found
-        """
-        if "_" not in key:
-            return None
+    #     Returns:
+    #         The secret value or None if not found
+    #     """
+    #     if "_" not in key:
+    #         return None
 
-        group, key = key.lower().split("_", 1)
-        if group not in self._secrets:
-            return None
+    #     group, key = key.lower().split("_", 1)
+    #     if group not in self._secrets:
+    #         return None
 
-        return self._secrets[group].get(key)
+    #     return self._secrets[group].get(key)
 
     def get_secret(self, group: str, key: str) -> Optional[str]:
         """Get a specific secret value."""
