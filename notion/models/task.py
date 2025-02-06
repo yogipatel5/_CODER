@@ -1,49 +1,26 @@
-# notion/models/task.py
-"""Models for managing Celery tasks."""
-from django.db import models
+from django.db.models import SET_NULL, OneToOneField
 
-from notion.managers.task import TaskManager
+from shared.models import SharedTask
 
 
-class Task(models.Model):
-    """Model for managing Celery tasks in the Notion app."""
+class Task(SharedTask):
+    """Model for managing Celery tasks in the notion app."""
 
-    name = models.CharField(max_length=255, unique=True, help_text="Name of the task")
-    description = models.TextField(blank=True, help_text="Description of what this task does")
+    # App-specific fields
+    periodic_task = OneToOneField(
+        "django_celery_beat.PeriodicTask",
+        on_delete=SET_NULL,
+        null=True,
+        blank=True,
+        related_name="%(app_label)s_task",
+        help_text="Associated periodic task in Django Celery Beat",
+    )
 
-    # Task settings
-    is_active = models.BooleanField(default=True, help_text="Whether this task is enabled")
-    notify_on_error = models.BooleanField(default=False, help_text="Whether to send notifications on errors")
-    disable_on_error = models.BooleanField(default=False, help_text="Whether to disable task on errors")
-    max_retries = models.IntegerField(default=3, help_text="Maximum number of retry attempts")
-
-    # Schedule settings (for periodic tasks)
-    schedule = models.CharField(max_length=100, blank=True, help_text="Crontab or interval schedule")
-    last_run = models.DateTimeField(null=True, blank=True)
-    next_run = models.DateTimeField(null=True, blank=True)
-
-    # Task configuration
-    config = models.JSONField(default=dict, help_text="Task-specific configuration options")
-
-    # Error tracking
-    error_count = models.IntegerField(default=0, help_text="Number of errors encountered")
-    last_error = models.TextField(blank=True, help_text="Last error message")
-    last_error_time = models.DateTimeField(null=True, blank=True)
-
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # Manager
-    # TODO: Add task priority field and handling
-    # TODO: Add task dependencies tracking
-    # TODO: Move task status logic to TaskManager
-    # TODO: Add task history tracking
-    objects = TaskManager()
-
-    def __str__(self):
-        return f"{self.name} ({'active' if self.is_active else 'inactive'})"
-
-    class Meta:
+    class Meta(SharedTask.Meta):
+        app_label = "notion"
         verbose_name = "Task"
         verbose_name_plural = "Tasks"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
