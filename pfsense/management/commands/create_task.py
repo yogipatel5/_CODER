@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 from pfsense.management.commands._base import pfsense_HelperCommand
@@ -38,15 +39,17 @@ class Command(pfsense_HelperCommand):
 
         # Create or update the Celery periodic task
         periodic_task, _ = PeriodicTask.objects.get_or_create(
-            name=f"{name}_periodic",
-            task=task_path,
-            interval=schedule,
+            name=name,  # Use the same name for both Task and PeriodicTask
             defaults={
+                "task": task_path,
+                "interval": schedule,
                 "enabled": True,
+                "one_off": False,
+                "start_time": timezone.now(),
             },
         )
 
-        # Create the task
+        # Create or update the task
         task, created = Task.objects.get_or_create(
             name=name,
             defaults={
@@ -55,9 +58,20 @@ class Command(pfsense_HelperCommand):
                 "notify_on_error": options["notify_on_error"],
                 "disable_on_error": options["disable_on_error"],
                 "max_retries": options["max_retries"],
+                "schedule": f"Every {schedule_every} {schedule_type.lower()}",
                 "periodic_task": periodic_task,
             },
         )
+
+        # Update existing task if needed
+        if not created:
+            task.description = options.get("description", task.description)
+            task.notify_on_error = options["notify_on_error"]
+            task.disable_on_error = options["disable_on_error"]
+            task.max_retries = options["max_retries"]
+            task.schedule = f"Every {schedule_every} {schedule_type.lower()}"
+            task.periodic_task = periodic_task
+            task.save()
 
         if created:
             self.log_success(f"Created new task '{name}' with periodic schedule")

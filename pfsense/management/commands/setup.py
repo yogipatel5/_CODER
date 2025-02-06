@@ -31,54 +31,6 @@ class Command(BaseCommand):
             help="Skip initial DHCP routes sync",
         )
 
-    def _setup_task(self, config: Dict[str, Any]) -> Task:
-        """Setup a single task with its periodic schedule.
-
-        Args:
-            config: Task configuration dictionary
-
-        Returns:
-            Task: The created or updated task
-        """
-        # Get or create the task
-        task, created = Task.objects.get_or_create(
-            name=config["name"],
-            defaults={
-                "description": config["description"],
-                "notify_on_error": config.get("notify_on_error", True),
-                "disable_on_error": config.get("disable_on_error", False),
-                "max_retries": config.get("max_retries", 3),
-            },
-        )
-
-        # Update task fields if not created
-        if not created:
-            task.description = config["description"]
-            task.notify_on_error = config.get("notify_on_error", True)
-            task.disable_on_error = config.get("disable_on_error", False)
-            task.max_retries = config.get("max_retries", 3)
-
-        # Create or update the periodic task
-        periodic_task, _ = PeriodicTask.objects.update_or_create(
-            name=config["name"],
-            defaults={
-                "task": config["task"],
-                "interval": config["schedule"],
-                "enabled": True,
-                "one_off": False,
-                "start_time": timezone.now(),
-            },
-        )
-
-        # Link periodic task and update schedule description
-        task.periodic_task = periodic_task
-        task.schedule = f"Every {config['schedule'].every} {config['schedule'].period}"
-        task.save()
-
-        action = "Created" if created else "Updated"
-        self.stdout.write(self.style.SUCCESS(f"{action} task: {config['name']}"))
-        return task
-
     def _setup_periodic_tasks(self):
         """Setup periodic tasks for the app."""
         self.stdout.write("Setting up periodic tasks...")
@@ -100,67 +52,85 @@ class Command(BaseCommand):
             tasks_config = [
                 {
                     "name": "sync_dhcp_routes",
-                    "task": "pfsense.tasks.sync_dhcp_routes.sync_dhcp_routes",
-                    "schedule": schedules["hourly"],
                     "description": "Sync DHCP routes from pfSense to local database",
+                    "task": "pfsense.tasks.sync_dhcp_routes",
+                    "schedule": schedules["hourly"],
                     "notify_on_error": True,
                     "disable_on_error": False,
                     "max_retries": 3,
                 },
-                # Add more tasks here as needed
             ]
 
             # Setup each task
             for config in tasks_config:
-                self._setup_task(config)
+                # First create/update the periodic task
+                periodic_task = PeriodicTask.objects.update_or_create(
+                    name=config["name"],
+                    defaults={
+                        "task": config["task"],
+                        "interval": config["schedule"],
+                        "enabled": True,
+                        "one_off": False,
+                        "start_time": timezone.now(),
+                    },
+                )[0]
+
+                # Then create/update our task without select_for_update
+                task = Task.objects.filter(name=config["name"]).first()
+                if task:
+                    # Update existing task
+                    task.description = config["description"]
+                    task.notify_on_error = config.get("notify_on_error", True)
+                    task.disable_on_error = config.get("disable_on_error", False)
+                    task.max_retries = config.get("max_retries", 3)
+                    task.schedule = f"Every {config['schedule'].every} {config['schedule'].period}"
+                    task.periodic_task = periodic_task
+                    task.is_active = True
+                    task.save()
+                else:
+                    # Create new task
+                    task = Task.objects.create(
+                        name=config["name"],
+                        description=config["description"],
+                        notify_on_error=config.get("notify_on_error", True),
+                        disable_on_error=config.get("disable_on_error", False),
+                        max_retries=config.get("max_retries", 3),
+                        schedule=f"Every {config['schedule'].every} {config['schedule'].period}",
+                        periodic_task=periodic_task,
+                        is_active=True,
+                    )
+
+                self.stdout.write(self.style.SUCCESS(f"Created/updated task: {config['name']}"))
+
+            self.stdout.write(self.style.SUCCESS("Successfully setup periodic tasks"))
 
         except Exception as e:
-            logger.error("Failed to setup periodic tasks: %s", str(e))
-            raise
-
-    def _perform_initial_sync(self):
-        """Perform initial DHCP routes sync."""
-        self.stdout.write("Starting initial DHCP routes sync...")
-        try:
-            task = Task.objects.get(name="sync_dhcp_routes")
-            count = sync_dhcp_routes()
-
-            if count is None:
-                task.last_status = "error"
-                task.last_error = "No routes were synced. Check the logs for details."
-                self.stdout.write(self.style.WARNING(task.last_error))
-            else:
-                task.last_status = "success"
-                task.last_result = {"synced_routes": count}
-                self.stdout.write(self.style.SUCCESS(f"Successfully synced {count} DHCP routes"))
-
-            task.last_run = timezone.now()
-            task.save()
-
-        except Exception as e:
-            logger.error("Initial sync failed: %s", str(e))
-            self.stdout.write(self.style.ERROR(f"Initial sync failed: {str(e)}"))
+            self.stdout.write(self.style.ERROR(f"Failed to setup periodic tasks: {str(e)}"))
             raise
 
     def handle(self, *args, **options):
-        """Handle the command execution."""
+        """Handle command execution."""
         force = options["force"]
         skip_sync = options["skip_sync"]
 
-        try:
-            # Check if setup has already been run
-            if not force and Task.objects.exists():
-                self.stdout.write(self.style.WARNING("Setup has already been run. Use --force to run again."))
-                return
+        # Check if already configured
+        if Task.objects.exists() and not force:
+            self.stdout.write("App is already configured. Use --force to reconfigure.")
+            return
 
-            self._setup_periodic_tasks()
+        # Setup periodic tasks
+        self._setup_periodic_tasks()
 
-            if not skip_sync:
-                self._perform_initial_sync()
+        # Run initial sync if requested
+        if not skip_sync:
+            self.stdout.write("Running initial DHCP routes sync...")
+            try:
+                result = sync_dhcp_routes()
+                if result:
+                    self.stdout.write(self.style.SUCCESS(f"Successfully synced {result} routes"))
+                else:
+                    self.stdout.write(self.style.WARNING("No routes synced"))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Failed to run initial sync: {str(e)}"))
 
-            self.stdout.write(self.style.SUCCESS("Setup completed successfully"))
-
-        except Exception as e:
-            logger.error("Setup failed: %s", str(e))
-            self.stdout.write(self.style.ERROR(f"Setup failed: {str(e)}"))
-            raise
+        self.stdout.write(self.style.SUCCESS("Successfully setup pfsense app"))
