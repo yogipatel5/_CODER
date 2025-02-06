@@ -1,6 +1,7 @@
 """Manager for SharedTask model with task management functionality."""
 
 import logging
+from functools import wraps
 from typing import Optional
 
 from django.db import models
@@ -13,6 +14,7 @@ class SharedTaskManager(models.Manager):
     """Manager for SharedTask model with task management functionality."""
 
     def get_queryset(self):
+        """Get queryset with related periodic task."""
         return super().get_queryset().select_related("periodic_task")
 
     def get_active_task(self, task_name: str) -> Optional["SharedTask"]:  # noqa
@@ -44,44 +46,72 @@ class SharedTaskManager(models.Manager):
         logger.debug(f"Creating task wrapper for {task_name}")
 
         def wrapper(task_func):
-            def wrapped_func(*args, **kwargs):
-                task_config = self.get_active_task(task_name)
+            @wraps(task_func)
+            def inner(*args, **kwargs):
+                @wraps(task_func)
+                def wrapped_func(*args, **kwargs):
+                    # Get task config without select_for_update to avoid outer join issues
+                    task_config = self.filter(name=task_name, is_active=True).first()
 
-                if not task_config:
-                    logger.warning(f"Task {task_name} is not active or not configured, skipping execution")
-                    return None
+                    if not task_config:
+                        logger.warning(f"Task {task_name} is not active or not configured, skipping execution")
+                        return None
 
-                try:
-                    logger.info(f"Executing task {task_name}")
-                    result = task_func(*args, **kwargs)
-                    logger.info(f"Task {task_name} completed successfully with result: {result}")
+                    try:
+                        logger.info(f"Executing task {task_name}")
+                        result = task_func(*args, **kwargs)
+                        logger.info(f"Task {task_name} completed successfully with result: {result}")
 
-                    # Update task status
-                    task_config.last_status = "success"
-                    task_config.last_result = {"result": result}
-                    task_config.save()
+                        # Update task status
+                        task_config.last_status = "success"
+                        task_config.last_result = (
+                            result.get("message", str(result)) if isinstance(result, dict) else str(result)
+                        )
+                        task_config.last_run = timezone.now()
+                        self._save_without_periodic_task_update(task_config)
 
-                    return result
+                        # Update error statuses
+                        task_config.errors.update_regressed_errors(task_config)
 
-                except Exception as e:
-                    error_message = f"Error in task {task_name}: {str(e)}"
-                    logger.error(error_message, exc_info=True)
+                        return result.get("count", result) if isinstance(result, dict) else result
 
-                    # Update task error status
-                    task_config.last_status = "error"
-                    task_config.last_error = error_message
+                    except Exception as e:
+                        error_message = f"Error in task {task_name}: {str(e)}"
+                        logger.error(error_message, exc_info=True)
 
-                    # Disable task if configured
-                    if task_config.disable_on_error:
-                        logger.info(f"Disabling task {task_name} due to error")
-                        task_config.is_active = False
+                        # Update task error status
+                        task_config.last_status = "error"
+                        task_config.last_error = error_message
+                        task_config.last_run = timezone.now()
 
-                    task_config.save()
+                        # Log error using manager
+                        import sys
 
-                    # Re-raise the exception for retry mechanism
-                    raise
+                        task_config.errors.log_error(task_config, e, sys.exc_info()[2])
 
-            return wrapped_func
+                        # Disable task if configured
+                        if task_config.disable_on_error:
+                            logger.info(f"Disabling task {task_name} due to error")
+                            task_config.is_active = False
+
+                        # Send notification if configured
+                        if task_config.notify_on_error:
+                            from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
+
+                            NotifyMeTask.notify_me(
+                                message=error_message,
+                                title=f"Task Error: {task_name}",
+                                priority=PRIORITY_HIGH,
+                            )
+
+                        self._save_without_periodic_task_update(task_config)
+
+                        # Re-raise the exception for retry mechanism
+                        raise
+
+                return wrapped_func
+
+            return inner
 
         return wrapper
 
@@ -274,19 +304,25 @@ class SharedTaskManager(models.Manager):
 
     def run_task(self, task):
         """Run a task immediately."""
+        logger.info("Running Task: %s", task.name)
         if not task.is_active:
             return False
 
         task_name = task.periodic_task.task if task.periodic_task else None
+        logger.info("  - Task Name: %s", task_name)
         if not task_name:
             return False
 
-        # Import and run the task function
-        module_name, func_name = task_name.rsplit(".", 1)
-        module = __import__(module_name, fromlist=[func_name])
-        task_func = getattr(module, func_name)
+        # Get the task from Celery's registry
+        from celery import current_app
+
+        task_func = current_app.tasks.get(task_name)
+        logger.info("task_func: %s", task_func)
+        if not task_func:
+            return False
 
         # Run the task
+        logger.info(f"running task with delay")
         task_func.delay()
         return True
 
@@ -297,7 +333,7 @@ class SharedTaskManager(models.Manager):
 
     def _save_without_periodic_task_update(self, task, *args, **kwargs):
         """Save the task without updating its periodic task to avoid recursion."""
-        super(self.model, task).save(*args, **kwargs)
+        models.Model.save(task, *args, **kwargs)
 
     def save_and_update_periodic_task(self, task, *args, **kwargs):
         """Save the task and update its periodic task if needed."""
