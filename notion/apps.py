@@ -1,35 +1,11 @@
+"""Django app configuration for pfsense app."""
+
 import logging
 from pathlib import Path
 
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
 
 logger = logging.getLogger(__name__)
-
-
-def setup_periodic_tasks(sender, **kwargs):
-    """Set up periodic tasks for Notion sync."""
-    from django_celery_beat.models import IntervalSchedule, PeriodicTask
-
-    try:
-        # Create or get the interval schedule (every 5 minutes)
-        schedule, _ = IntervalSchedule.objects.get_or_create(
-            every=5,
-            period=IntervalSchedule.MINUTES,
-        )
-
-        # Create or update the periodic task
-        PeriodicTask.objects.update_or_create(
-            name="sync_notion_content",
-            defaults={
-                "task": "notion.tasks.sync.sync_notion_content",
-                "interval": schedule,
-                "enabled": True,
-            },
-        )
-        logger.info("Successfully set up Notion sync periodic task")
-    except Exception as e:
-        logger.error(f"Error setting up periodic tasks: {e}")
 
 
 class NotionConfig(AppConfig):
@@ -37,11 +13,6 @@ class NotionConfig(AppConfig):
 
     name = "notion"
     default_auto_field = "django.db.models.BigAutoField"
-
-    # TODO: Move periodic task configuration to a dedicated service
-    # TODO: Add health checks for Notion API connection
-    # TODO: Implement proper startup validation for required settings
-    # TODO: Add signal handlers for model operations
 
     def _import_modules_from_directory(self, directory_name: str):
         """
@@ -68,11 +39,8 @@ class NotionConfig(AppConfig):
 
     def ready(self):
         """Initialize the application by importing all required modules and setting up periodic tasks."""
-        # Import all admin, models, tasks, and signal modules
+        # Import all admin, models and task modules
         self._import_modules_from_directory("admin")
         self._import_modules_from_directory("models")
         self._import_modules_from_directory("tasks")
         self._import_modules_from_directory("signals")
-
-        # Connect the post_migrate signal handler
-        post_migrate.connect(setup_periodic_tasks, sender=self)

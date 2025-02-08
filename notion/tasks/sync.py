@@ -1,17 +1,22 @@
-from celery import shared_task
-from celery.utils.log import get_task_logger
+import logging
 
 from notion.services.sync import NotionSyncService
+from shared.celery.task import shared_task
 
-logger = get_task_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
+    schedule={
+        "type": "interval",
+        "every": 1,
+        "period": "minutes",  # Use lowercase for timedelta
+    },
+    description="Sync Notion content",
+    notify_on_error=True,
+    disable_on_error=False,
     max_retries=3,
-    default_retry_delay=60,  # 1 minute
-    autoretry_for=(Exception,),
-    retry_backoff=True,
 )
 def sync_notion_content(self):
     """

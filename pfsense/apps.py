@@ -1,15 +1,14 @@
-"""pfsense Django app configuration."""
+"""Django app configuration for pfsense app."""
 
 from django.apps import AppConfig
 
 
 class PfsenseConfig(AppConfig):
-    """Django app configuration for pfsense."""
+    """Configuration for pfsense app."""
 
     name = "pfsense"
     verbose_name = "Pfsense"
 
     def ready(self):
-        """Import tasks to ensure they are registered."""
-        # Import tasks to ensure they are registered with Celery
-        from pfsense.tasks import sync_dhcp_routes  # noqa
+        """Import tasks to ensure they are registered with Celery."""
+        import pfsense.tasks  # noqa
