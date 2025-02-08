@@ -55,34 +55,8 @@ class SharedTask(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def last_run_display(self):
-        """Get a human-readable string of when the task last ran."""
-        return type(self).objects.get_last_run_display(self)
-
-    @property
-    def next_run_display(self):
-        """Get a human-readable string of when the task will next run."""
-        return type(self).objects.get_next_run_display(self)
-
-    @property
-    def next_run(self):
-        """Get the next scheduled run time from the periodic task."""
-        return type(self).objects.get_next_run(self)
-
-    @property
-    def error_count_display(self):
-        """Get a display string for the number of active errors."""
-        return type(self).objects.get_error_count_display(self)
-
-    def save(self, *args, **kwargs):
-        """Save the task and update its periodic task if needed."""
-        type(self).objects.save_and_update_periodic_task(self, *args, **kwargs)
-
-    def disable(self):
-        """Disable the task."""
-        type(self).objects.disable(self)
-
-    def run(self):
-        """Run the task immediately."""
-        return type(self).objects.run_task(self)
+    def delete(self, *args, **kwargs):
+        """Delete the task and its associated periodic task."""
+        if self.periodic_task:
+            self.periodic_task.delete()
+        return super().delete(*args, **kwargs)

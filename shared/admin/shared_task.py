@@ -4,24 +4,7 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
-
-def format_timedelta(td):
-    """Format timedelta into hours and minutes."""
-    if not td:
-        return "never"
-
-    total_seconds = int(td.total_seconds())
-    hours = total_seconds // 3600
-    minutes = (total_seconds % 3600) // 60
-
-    if hours and minutes:
-        return f"{hours}hr {minutes}m"
-    elif hours:
-        return f"{hours}hr"
-    elif minutes:
-        return f"{minutes}m"
-    else:
-        return "just now"
+from shared.utils.time import format_next_run, format_timedelta
 
 
 class SharedTaskErrorInline(admin.TabularInline):
@@ -113,9 +96,15 @@ class SharedTaskAdmin(admin.ModelAdmin):
     ]
     list_filter = ["is_active", "last_status", "notify_on_error"]
     search_fields = ["name", "description"]
-    readonly_fields = ["last_run", "next_run", "last_status", "last_result", "last_error"]
+    readonly_fields = [
+        "last_run",
+        "get_next_run_display",
+        "last_status",
+        "last_result",
+        "last_error",
+    ]
     save_on_top = True
-    actions = ["clear_task_errors"]
+    actions = ["clear_task_errors", "enable_tasks", "disable_tasks", "run_tasks"]
     inlines = []  # Add TaskErrorInline in your app's admin.py
 
     fieldsets = (
@@ -123,14 +112,14 @@ class SharedTaskAdmin(admin.ModelAdmin):
         (
             "Task Settings",
             {
-                "fields": ("is_active", "notify_on_error", "disable_on_error", "max_retries"),
+                "fields": ("is_active", "notify_on_error"),
                 "classes": ("collapse",),
             },
         ),
         (
             "Schedule",
             {
-                "fields": ("schedule", "periodic_task", "last_run", "next_run"),
+                "fields": ("periodic_task", "last_run", "get_next_run_display"),
                 "classes": ("collapse",),
             },
         ),
@@ -161,24 +150,57 @@ class SharedTaskAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """Optimize queryset by prefetching related fields."""
-        return super().get_queryset(request).prefetch_related("errors")
+        return super().get_queryset(request).prefetch_related("errors").select_related("periodic_task")
 
     def get_error_count_display(self, obj):
         """Display count of active errors."""
-        return obj.error_count_display
+        count = obj.errors.filter(cleared=False).count()
+        if count == 0:
+            return "—"
+        return format_html(
+            '<span style="color: red;">{}</span>',
+            count,
+        )
 
     get_error_count_display.short_description = "Active Errors"
 
     def get_last_run_display(self, obj):
         """Format last run time."""
-        return obj.last_run_display
+        if not obj.last_run:
+            return "never"
+        return format_timedelta(timezone.now() - obj.last_run)
 
     get_last_run_display.short_description = "Last Run"
     get_last_run_display.admin_order_field = "last_run"
 
     def get_next_run_display(self, obj):
         """Format next run time."""
-        return obj.next_run_display
+        if not obj.periodic_task or not obj.periodic_task.enabled:
+            return "—"
+
+        # Get the schedule
+        schedule = None
+        if hasattr(obj.periodic_task, "interval"):
+            schedule = obj.periodic_task.interval
+        elif hasattr(obj.periodic_task, "crontab"):
+            schedule = obj.periodic_task.crontab
+        elif hasattr(obj.periodic_task, "solar"):
+            schedule = obj.periodic_task.solar
+
+        if not schedule:
+            return "—"
+
+        # Get last run time, defaulting to now if never run
+        last_run = obj.periodic_task.last_run_at or timezone.now()
+        if timezone.is_naive(last_run):
+            last_run = timezone.make_aware(last_run)
+
+        try:
+            # Calculate next run time
+            next_run = schedule.schedule.next(last_run)
+            return format_next_run(next_run)
+        except Exception:
+            return "—"
 
     get_next_run_display.short_description = "Next Run"
     get_next_run_display.admin_order_field = "next_run"
@@ -235,16 +257,39 @@ class SharedTaskAdmin(admin.ModelAdmin):
 
     def run_task_view(self, request, task_id):
         """View for running a task manually."""
-        task = self.model.objects.get(pk=task_id)
-        task.run()
+        task = self.get_object(request, task_id)
+        self.model.objects.run_task(task)
         self.message_user(request, f"Task '{task.name}' has been queued to run.")
         return redirect("..")
 
     def clear_errors_view(self, request, task_id):
         """View for clearing all errors for a task."""
-        task = self.model.objects.get(pk=task_id)
+        task = self.get_object(request, task_id)
         count = task.errors.filter(cleared=False).update(
             cleared=True, cleared_at=timezone.now(), cleared_by=request.user
         )
         self.message_user(request, f"Cleared {count} errors for task '{task.name}'.")
         return redirect("..")
+
+    def enable_tasks(self, request, queryset):
+        for task in queryset:
+            task.is_active = True
+            task.save()
+        self.message_user(request, f"Enabled {queryset.count()} tasks.")
+
+    enable_tasks.short_description = "Enable selected tasks"
+
+    def disable_tasks(self, request, queryset):
+        for task in queryset:
+            task.is_active = False
+            task.save()
+        self.message_user(request, f"Disabled {queryset.count()} tasks.")
+
+    disable_tasks.short_description = "Disable selected tasks"
+
+    def run_tasks(self, request, queryset):
+        for task in queryset:
+            task.objects.run_task(task)
+        self.message_user(request, f"Started {queryset.count()} tasks.")
+
+    run_tasks.short_description = "Run selected tasks"

@@ -2,8 +2,9 @@
 
 import logging
 from functools import wraps
-from typing import Optional
+from typing import Any, Callable, Dict, Optional
 
+from django.apps import apps
 from django.db import models
 from django.utils import timezone
 
@@ -12,6 +13,18 @@ logger = logging.getLogger(__name__)
 
 class SharedTaskManager(models.Manager):
     """Manager for SharedTask model with task management functionality."""
+
+    def get_task_model_for_name(self, task_name):
+        """Get the Task model for a given task name."""
+        # First try to find the task in all installed apps
+        for app_config in apps.get_app_configs():
+            try:
+                task_model = app_config.get_model("Task")
+                if task_model.objects.filter(name=task_name).exists():
+                    return task_model
+            except LookupError:
+                continue
+        return None
 
     def get_queryset(self):
         """Get queryset with related periodic task."""
@@ -34,99 +47,171 @@ class SharedTaskManager(models.Manager):
             logger.warning(f"No active task configuration found for {task_name}")
             return None
 
-    def create_task_wrapper(self, task_name: str):
-        """Create a wrapper for tasks that includes error handling.
+    def handle_task_start(self, task_config) -> None:
+        """Handle task startup.
+
+        - Records task start time
+        - Initializes task state
+        - Validates task is enabled
+
+        Args:
+            task_config: The task configuration instance
+        """
+        logger.info(f"Starting task {task_config.name}")
+        task_config.last_run = timezone.now()
+        task_config.last_status = None
+        task_config.last_result = {"message": "Task started", "status": "running"}
+        task_config.save(update_fields=["last_run", "last_status", "last_result"])
+
+    def handle_task_success(self, task_config, result: Any) -> None:
+        """Handle successful task completion.
+
+        - Updates task status and result
+        - Records completion time
+        - Clears any error state
+
+        Args:
+            task_config: The task configuration instance
+            result: The result returned by the task
+        """
+        logger.info(f"Task {task_config.name} completed successfully")
+
+        # Format result for storage
+        if isinstance(result, dict):
+            task_result = result
+        elif isinstance(result, str):
+            task_result = {"message": result}
+        else:
+            task_result = {"message": str(result)}
+
+        # Always include status and completion time
+        task_result["status"] = "success"
+        task_result["completed_at"] = timezone.now().isoformat()
+
+        # Update task state
+        task_config.last_status = "success"
+        task_config.last_result = task_result
+        task_config.last_error = ""  # Clear any previous error
+        task_config.last_run = timezone.now()  # Update last_run time
+        task_config.save(update_fields=["last_status", "last_result", "last_error", "last_run"])
+
+        # Update error tracking if available
+        if hasattr(task_config, "errors"):
+            task_config.errors.update_regressed_errors(task_config)
+
+    def handle_task_error(self, task_config, error: Exception, traceback=None) -> None:
+        """Handle task error.
+
+        - Records error details
+        - Updates task status
+        - Handles error notifications
+        - Manages task disable on error
+
+        Args:
+            task_config: The task configuration instance
+            error: The exception that occurred
+            traceback: Optional traceback info
+        """
+        error_message = f"Error in task {task_config.name}: {str(error)}"
+        logger.error(error_message, exc_info=True)
+
+        # Update task error status
+        task_config.last_status = "error"
+        task_config.last_error = error_message
+
+        # Handle task disable if configured
+        if task_config.disable_on_error:
+            logger.info(f"Disabling task {task_config.name} due to error")
+            task_config.is_active = False
+
+        task_config.save(update_fields=["last_status", "last_error", "is_active"])
+
+        # Log error details
+        if traceback:
+            task_config.errors.log_error(task_config, error, traceback)
+
+        # Send notification if configured
+        if task_config.notify_on_error:
+            from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
+
+            NotifyMeTask.notify_me(
+                message=error_message,
+                title=f"Task Error: {task_config.name}",
+                priority=PRIORITY_HIGH,
+            )
+
+    @classmethod
+    def create_task_wrapper(cls, task_name: str) -> Callable:
+        """Create a wrapper for tasks that includes lifecycle management.
 
         Args:
             task_name: Name of the task to create wrapper for
 
         Returns:
-            callable: Wrapped task function with error handling
+            callable: Wrapped task function with lifecycle management
         """
         logger.debug(f"Creating task wrapper for {task_name}")
 
-        def wrapper(task_func):
+        def wrapper(task_func: Callable) -> Callable:
             @wraps(task_func)
-            def inner(*args, **kwargs):
-                @wraps(task_func)
-                def wrapped_func(*args, **kwargs):
-                    # Get task config without select_for_update to avoid outer join issues
-                    task_config = self.filter(name=task_name, is_active=True).first()
+            def wrapped_func(*args: Any, **kwargs: Any) -> Any:
+                # Get the task model for this task
+                manager = cls()
+                task_model = manager.get_task_model_for_name(task_name)
+                if not task_model:
+                    logger.warning(f"No task model found for {task_name}")
+                    return task_func(*args, **kwargs)
 
-                    if not task_config:
-                        logger.warning(f"Task {task_name} is not active or not configured, skipping execution")
-                        return None
+                task = task_model.objects.filter(name=task_name, is_active=True).first()
+                if not task:
+                    logger.warning(f"Task {task_name} not found or not active")
+                    return task_func(*args, **kwargs)
 
-                    try:
-                        logger.info(f"Executing task {task_name}")
-                        result = task_func(*args, **kwargs)
-                        logger.info(f"Task {task_name} completed successfully with result: {result}")
+                # Record task start
+                task_model.objects.record_task_start(task_name)
 
-                        # Update task status
-                        task_config.last_status = "success"
-                        task_config.last_result = (
-                            result.get("message", str(result)) if isinstance(result, dict) else str(result)
-                        )
-                        task_config.last_run = timezone.now()
-                        self._save_without_periodic_task_update(task_config)
+                try:
+                    result = task_func(*args, **kwargs)
+                    task_model.objects.record_task_success(task_name, result)
+                    return result
+                except Exception as e:
+                    task_model.objects.record_task_error(task_name, e)
+                    raise  # Re-raise for Celery retry handling
 
-                        # Update error statuses
-                        task_config.errors.update_regressed_errors(task_config)
-
-                        return result.get("count", result) if isinstance(result, dict) else result
-
-                    except Exception as e:
-                        error_message = f"Error in task {task_name}: {str(e)}"
-                        logger.error(error_message, exc_info=True)
-
-                        # Update task error status
-                        task_config.last_status = "error"
-                        task_config.last_error = error_message
-                        task_config.last_run = timezone.now()
-
-                        # Log error using manager
-                        import sys
-
-                        task_config.errors.log_error(task_config, e, sys.exc_info()[2])
-
-                        # Disable task if configured
-                        if task_config.disable_on_error:
-                            logger.info(f"Disabling task {task_name} due to error")
-                            task_config.is_active = False
-
-                        # Send notification if configured
-                        if task_config.notify_on_error:
-                            from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
-
-                            NotifyMeTask.notify_me(
-                                message=error_message,
-                                title=f"Task Error: {task_name}",
-                                priority=PRIORITY_HIGH,
-                            )
-
-                        self._save_without_periodic_task_update(task_config)
-
-                        # Re-raise the exception for retry mechanism
-                        raise
-
-                return wrapped_func
-
-            return inner
+            return wrapped_func
 
         return wrapper
 
-    def _log_periodic_task_details(self, task):
-        """Log details about the periodic task for debugging."""
-        logger.info(f"Periodic Task Data for {task.name}:")
-        logger.info(f"  - Last Run: {task.last_run}")
-        logger.info(f"  - Enabled: {task.periodic_task.enabled}")
-        logger.info(f"  - Schedule: {task.periodic_task.schedule}")
-        if hasattr(task.periodic_task, "interval"):
-            logger.info(f"  - Interval: {task.periodic_task.interval}")
-        if hasattr(task.periodic_task, "crontab"):
-            logger.info(f"  - Crontab: {task.periodic_task.crontab}")
-        if hasattr(task.periodic_task, "solar"):
-            logger.info(f"  - Solar: {task.periodic_task.solar}")
+    @classmethod
+    def list_registered_tasks(cls) -> list:
+        """Get a list of all registered task names, excluding Celery internal tasks.
+
+        Returns:
+            list: List of registered task names
+        """
+        from celery import current_app
+
+        # Get all registered task names
+        registered_tasks = list(current_app.tasks.keys())
+
+        # Filter out built-in Celery tasks and internal tasks
+        filtered_tasks = [task for task in registered_tasks if not task.startswith(("celery.", "_"))]
+
+        return sorted(filtered_tasks)
+
+    @classmethod
+    def verify_task_registration(cls, task_name: str) -> bool:
+        """Verify that a task is properly registered with Celery.
+
+        Args:
+            task_name: Full task name to verify (e.g. 'pfsense.tasks.sync_dhcp_routes')
+
+        Returns:
+            bool: True if task is registered, False otherwise
+        """
+        from celery import current_app
+
+        return task_name in current_app.tasks
 
     def _get_last_run(self, task) -> Optional[timezone.datetime]:
         """Get the timezone-aware last run time from the periodic task."""
@@ -225,8 +310,6 @@ class SharedTaskManager(models.Manager):
         if not task.periodic_task or not task.periodic_task.enabled:
             return None
 
-        self._log_periodic_task_details(task)
-
         last_run = self._get_last_run(task)
         if last_run is None:
             return timezone.now()
@@ -243,88 +326,83 @@ class SharedTaskManager(models.Manager):
 
         return None
 
-    def get_last_run_display(self, task):
-        """Get a human-readable string of when the task last ran."""
-        # Use the last_run from periodic_task as it's more accurate
-        if not task.periodic_task or not task.periodic_task.last_run_at:
-            return "never"
+    def run_task(self, task_or_name) -> Any:
+        """Run a periodic task immediately with its configured parameters.
 
-        now = timezone.now()
-        last_run = task.periodic_task.last_run_at
-        if timezone.is_naive(last_run):
-            last_run = timezone.make_aware(last_run)
+        Args:
+            task_or_name: Either a SharedTask instance or a task name string
 
-        diff = now - last_run
+        Returns:
+            Any: Result of the task execution
+        """
+        import json
+        from ast import literal_eval
 
-        if diff.days > 0:
-            return f"{diff.days}d ago"
-        elif diff.seconds >= 3600:
-            return f"{diff.seconds // 3600}h ago"
-        elif diff.seconds >= 60:
-            return f"{diff.seconds // 60}m ago"
-        else:
-            return f"{diff.seconds}s ago"
-
-    def get_next_run_display(self, task):
-        """Get a human-readable string of when the task will next run."""
-        if not task.periodic_task:
-            return "—"
-
-        next_run = self.get_next_run(task)
-        if not next_run:
-            return "—"
-
-        now = timezone.now()
-        logger.info(f"Calculating next run display for {task.name}:")
-        logger.info(f"  - Next Run: {next_run}")
-        logger.info(f"  - Current Time: {now}")
-
-        # Ensure both times are timezone-aware
-        if timezone.is_naive(next_run):
-            next_run = timezone.make_aware(next_run)
-
-        diff = next_run - now
-        total_seconds = int(diff.total_seconds())
-
-        if total_seconds < 0:
-            return "now"  # Task is overdue
-        elif diff.days > 0:
-            return f"in {diff.days}d"
-        elif total_seconds >= 3600:
-            return f"in {total_seconds // 3600}h"
-        elif total_seconds >= 60:
-            return f"in {total_seconds // 60}m"
-        else:
-            return f"in {total_seconds}s"
-
-    def get_error_count_display(self, task):
-        """Get a display string for the number of active errors."""
-        count = task.errors.filter(cleared=False).count()
-        return str(count) if count > 0 else "—"
-
-    def run_task(self, task):
-        """Run a task immediately."""
-        logger.info("Running Task: %s", task.name)
-        if not task.is_active:
-            return False
-
-        task_name = task.periodic_task.task if task.periodic_task else None
-        logger.info("  - Task Name: %s", task_name)
-        if not task_name:
-            return False
-
-        # Get the task from Celery's registry
         from celery import current_app
 
-        task_func = current_app.tasks.get(task_name)
-        logger.info("task_func: %s", task_func)
-        if not task_func:
+        # Handle both task instance and task name
+        if isinstance(task_or_name, str):
+            # Get task by name
+            task_config = self.get_active_task(task_or_name)
+            if not task_config:
+                raise ValueError(f"No active task configuration found for {task_or_name}")
+            task = task_config
+        else:
+            task = task_or_name
+
+        logger.info("Running Task: %s", task.name)
+        if not task.is_active:
+            logger.warning("Task %s is not active", task.name)
             return False
 
-        # Run the task
-        logger.info(f"running task with delay")
-        task_func.delay()
-        return True
+        # Get the periodic task configuration
+        periodic_task = task.periodic_task
+        if not periodic_task:
+            raise ValueError(f"No periodic task configuration found for {task.name}")
+
+        logger.info("Task Name: %s", periodic_task.task)
+
+        # Parse task parameters from periodic task
+        try:
+            args = literal_eval(periodic_task.args) if periodic_task.args else []
+        except (ValueError, SyntaxError):
+            args = json.loads(periodic_task.args) if periodic_task.args else []
+
+        try:
+            kwargs = literal_eval(periodic_task.kwargs) if periodic_task.kwargs else {}
+        except (ValueError, SyntaxError):
+            kwargs = json.loads(periodic_task.kwargs) if periodic_task.kwargs else {}
+
+        # Get additional task options
+        task_options = {
+            "queue": periodic_task.queue,
+            "headers": literal_eval(periodic_task.headers) if periodic_task.headers else None,
+            "expires": periodic_task.expires,
+            "priority": periodic_task.priority,
+        }
+        # Filter out None values
+        task_options = {k: v for k, v in task_options.items() if v is not None}
+
+        # Get the task from Celery
+        celery_task = current_app.tasks.get(periodic_task.task)
+        if not celery_task:
+            logger.error("Task %s not found in Celery registry", periodic_task.task)
+            return False
+
+        logger.info(
+            f"Running periodic task {task.name} ({periodic_task.task}) "
+            f"with args={args}, kwargs={kwargs}, options={task_options}"
+        )
+
+        try:
+            # Execute the task with stored parameters
+            result = celery_task.apply_async(args=args, kwargs=kwargs, **task_options)
+            # Update task state
+            self.handle_task_start(task)
+            return result
+        except Exception as e:
+            logger.error(f"Failed to execute task {task.name}: {str(e)}")
+            return False
 
     def disable(self, task):
         """Disable the task."""
@@ -348,3 +426,83 @@ class SharedTaskManager(models.Manager):
         if task.periodic_task and task.periodic_task.enabled != task.is_active:
             task.periodic_task.enabled = task.is_active
             task.periodic_task.save()
+
+    def record_task_start(self, task_name):
+        """Record that a task has started."""
+        task_model = self.get_task_model_for_name(task_name)
+        if not task_model:
+            logger.warning(f"No task found with name {task_name}")
+            return
+
+        task = task_model.objects.filter(name=task_name, is_active=True).first()
+        if not task:
+            logger.warning(f"Task {task_name} not found or not active")
+            return
+
+        task.last_status = "running"
+        task.save(update_fields=["last_status"])
+
+    def record_task_success(self, task_name, result=None):
+        """Record that a task has completed successfully."""
+        task_model = self.get_task_model_for_name(task_name)
+        if not task_model:
+            logger.warning(f"No task found with name {task_name}")
+            return
+
+        task = task_model.objects.filter(name=task_name, is_active=True).first()
+        if not task:
+            logger.warning(f"Task {task_name} not found or not active")
+            return
+
+        task.last_status = "success"
+        task.last_result = str(result) if result else None
+        task.save(update_fields=["last_status", "last_result"])
+
+    def record_task_error(self, task_name, error):
+        """Record that a task has failed."""
+        task_model = self.get_task_model_for_name(task_name)
+        if not task_model:
+            logger.warning(f"No task found with name {task_name}")
+            return
+
+        task = task_model.objects.filter(name=task_name, is_active=True).first()
+        if not task:
+            logger.warning(f"Task {task_name} not found or not active")
+            return
+
+        task.last_status = "error"
+        task.last_error = str(error)
+        task.save(update_fields=["last_status", "last_error"])
+
+        # Create error record
+        if hasattr(task, "create_error"):
+            task.create_error(error)
+
+
+def task_lifecycle(func):
+    """Decorator to manage task lifecycle."""
+
+    @wraps(func)
+    def wrapped_func(*args, **kwargs):
+        task_name = func.__name__
+        task_model = SharedTaskManager().get_task_model_for_name(task_name)
+        if not task_model:
+            logger.warning(f"No task found with name {task_name}")
+            return func(*args, **kwargs)
+
+        task = task_model.objects.filter(name=task_name, is_active=True).first()
+        if not task:
+            logger.warning(f"Task {task_name} not found or not active")
+            return func(*args, **kwargs)
+
+        task.objects.record_task_start(task_name)
+
+        try:
+            result = func(*args, **kwargs)
+            task.objects.record_task_success(task_name, result)
+            return result
+        except Exception as e:
+            task.objects.record_task_error(task_name, e)
+            raise
+
+    return wrapped_func
