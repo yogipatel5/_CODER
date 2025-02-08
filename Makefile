@@ -57,23 +57,23 @@ buildrun: deep-clean ## Clean everything, build Docker images and run containers
 	cd /Users/yp/Code/_CODER && docker compose -f _setup/docker-compose.yml exec -T web python manage.py migrate
 
 # Docker logs
-logs: ## View all Docker container logs
+logger: ## View all Docker container logs
 	docker compose -f _setup/docker-compose.yml logs -f
 
 logs-web: ## View web container logs
-	docker compose -f _setup/docker-compose.yml logs -f web
+	docker compose -f _setup/docker-compose.yml logs web -f
 
 logs-web-100: ## View web container logs
-	docker compose -f _setup/docker-compose.yml logs -f web --tail 100
+	docker compose -f _setup/docker-compose.yml logs web --tail 100
 
 logs-celery: ## View celery container logs
-	docker compose -f _setup/docker-compose.yml logs -f celery
+	docker compose -f _setup/docker-compose.yml logs celery -f
 
 logs-beat: ## View celery-beat container logs
-	docker compose -f _setup/docker-compose.yml logs -f celery-beat
+	docker compose -f _setup/docker-compose.yml logs celery-beat -f
 
 logs-redis: ## View redis container logs
-	docker compose -f _setup/docker-compose.yml logs -f redis
+	docker compose -f _setup/docker-compose.yml logs redis -f
 
 ps: ## List running Docker containers
 	docker compose -f _setup/docker-compose.yml ps
