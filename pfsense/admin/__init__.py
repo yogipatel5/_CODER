@@ -4,13 +4,6 @@ import importlib
 import logging
 from pathlib import Path
 
-from django.contrib import admin
-
-from pfsense.models.task import Task
-from shared.admin.shared_task import SharedTaskAdmin
-
-# Register Task with SharedTaskAdmin
-admin.site.register(Task, SharedTaskAdmin)
 logger = logging.getLogger(__name__)
 
 # Get all .py files in the admin directory

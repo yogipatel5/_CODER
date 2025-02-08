@@ -1,22 +1,11 @@
 from celery.utils.log import get_task_logger
 from django.utils import timezone
 
-from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
 from pfsense.models.dhcproute import DHCPRoute
 from pfsense.services.dhcp_server import DHCPServerService
 from shared.celery.task import shared_task  # Use our enhanced shared_task
 
 logger = get_task_logger(__name__)
-
-
-def notify_error(task_name, error_message):
-    """Send error notification using NotifyMeTask"""
-    title = f"pfSense Task Error: {task_name}"
-    NotifyMeTask.notify_me(
-        message=error_message,
-        title=title,
-        priority=PRIORITY_HIGH,
-    )
 
 
 def _routes_are_different(existing_route, new_data):
