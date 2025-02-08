@@ -1,19 +1,21 @@
 """Auto-discover and import all admin classes in this directory."""
+
 import importlib
-import inspect
 import logging
 from pathlib import Path
 
 from django.contrib import admin
 
+from {{ app_name }}.models.task import Task
+from shared.admin.shared_task import SharedTaskAdmin
+
+# Register Task with SharedTaskAdmin
+admin.site.register(Task, SharedTaskAdmin)
 logger = logging.getLogger(__name__)
 
 # Get all .py files in the admin directory
 admin_dir = Path(__file__).parent
-admin_files = [
-    f.stem for f in admin_dir.glob("*.py")
-    if f.is_file() and f.stem != "__init__"
-]
+admin_files = [f.stem for f in admin_dir.glob("*.py") if f.is_file() and f.stem != "__init__"]
 
 # Import each admin file
 for module_name in admin_files:
