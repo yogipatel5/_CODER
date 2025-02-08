@@ -1,10 +1,10 @@
-from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.utils import timezone
 
 from notifier.services.notify_me import PRIORITY_HIGH, NotifyMeTask
 from pfsense.models.dhcproute import DHCPRoute
 from pfsense.services.dhcp_server import DHCPServerService
+from shared.celery.task import shared_task  # Use our enhanced shared_task
 
 logger = get_task_logger(__name__)
 
@@ -31,8 +31,18 @@ def _routes_are_different(existing_route, new_data):
     )
 
 
-# @Task.objects.create_task_wrapper("pfsense.tasks.sync_dhcp_routes")
-@shared_task(name="pfsense.tasks.sync_dhcp_routes")
+@shared_task(
+    bind=False,
+    schedule={
+        "type": "interval",
+        "every": 1,
+        "period": "hours",  # Use lowercase for timedelta
+    },
+    description="Sync DHCP routes from pfSense to local database",
+    notify_on_error=True,
+    disable_on_error=False,
+    max_retries=3,
+)
 def sync_dhcp_routes():
     """Sync DHCP routes from pfSense to local database."""
     logger.info("Starting DHCP routes sync")
@@ -44,7 +54,7 @@ def sync_dhcp_routes():
     logger.debug(f"Raw response: {pfsense_routes}")
     if not pfsense_routes:
         logger.warning("No routes returned from pfSense")
-        return {"message": "No routes returned from pfSense", "count": 0}
+        return "No routes returned from pfSense"
 
     # Prefetch all existing routes
     existing_routes = {str(route.pfsense_id): route for route in DHCPRoute.objects.all()}
@@ -86,4 +96,4 @@ def sync_dhcp_routes():
             raise  # Re-raise to let the wrapper handle it
 
     logger.info(f"Successfully synced routes: {creates} created, {updates} updated")
-    return {"message": f"Synced routes: {creates} created, {updates} updated", "count": creates + updates}
+    return f"Synced routes: {creates} created, {updates} updated"
