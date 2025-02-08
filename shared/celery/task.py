@@ -1,23 +1,21 @@
-"""Shared task decorator with integrated routing and lifecycle hooks."""
+"""Celery task decorator with lifecycle management."""
 
 import logging
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
-from celery import current_app
 from celery import shared_task as celery_shared_task
 from django.apps import apps
-from django.conf import settings
-from django.db import transaction
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 from django.utils import timezone
 from django_celery_beat.models import (
     CrontabSchedule,
     IntervalSchedule,
     PeriodicTask,
+    PeriodicTasks,
     SolarSchedule,
 )
-
-from shared.managers.shared_task import SharedTaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +27,6 @@ def setup_task_schedule(task_info: Dict[str, Any]) -> None:
         task_info: Dictionary containing task registration info
     """
     try:
-        logger.info(f"Setting up periodic task for {task_info['full_task_name']}")
-
         # Get the schedule configuration
         schedule = task_info["schedule"]
         schedule_type = schedule.get("type", "interval")
@@ -68,6 +64,7 @@ def setup_task_schedule(task_info: Dict[str, Any]) -> None:
             "task": task_info["full_task_name"],
             "name": task_info["full_task_name"],
             "enabled": True,
+            "start_time": timezone.now(),  # Set start time to now when creating/updating
         }
 
         if schedule_type == "interval":
@@ -80,7 +77,9 @@ def setup_task_schedule(task_info: Dict[str, Any]) -> None:
         periodic_task, created = PeriodicTask.objects.update_or_create(
             name=task_info["full_task_name"], defaults=defaults
         )
-        logger.info(f"{'Created' if created else 'Updated'} periodic task {task_info['full_task_name']}")
+
+        # Update PeriodicTasks to ensure the scheduler picks up changes
+        PeriodicTasks.update_changed()
 
         # Get the app's Task model
         app_name = task_info["app_name"]
@@ -98,21 +97,52 @@ def setup_task_schedule(task_info: Dict[str, Any]) -> None:
             "is_active": True,
         }
 
-        logger.info(f"Creating/updating app task {task_info['task_name']}")
         task, created = Task.objects.get_or_create(name=task_info["task_name"], defaults=task_defaults)
-        logger.info(f"{'Created' if created else 'Updated'} app task {task_info['task_name']}")
 
         # Link the periodic task
         task.periodic_task = periodic_task
         task.save()
-        logger.info(f"Linked periodic task to app task {task_info['task_name']}")
 
     except Exception as e:
-        logger.error(f"Failed to setup periodic task {task_info['task_name']}: {e}", exc_info=True)
+        logger.error(f"Error setting up task schedule: {str(e)}")
+
+
+# Store task registrations for initialization after Django is ready
+_TASK_REGISTRATIONS = {}  # Change to dict to track by app
+_INITIALIZED_APPS = set()  # Track which apps have been initialized
+
+
+@receiver(post_migrate)
+def initialize_periodic_tasks(sender, **kwargs):
+    """Initialize periodic tasks after Django migrations are complete."""
+    try:
+        app_label = sender.label if hasattr(sender, "label") else None
+        if not app_label or app_label in _INITIALIZED_APPS:
+            return
+
+        logger.info(f"Checking periodic tasks for app: {app_label}")
+
+        # Only process tasks for this app
+        app_tasks = _TASK_REGISTRATIONS.get(app_label, [])
+        if not app_tasks:
+            logger.info(f"No tasks registered for app: {app_label}")
+            return
+
+        logger.info(f"Initializing {len(app_tasks)} periodic tasks for {app_label}")
+        for task_info in app_tasks:
+            logger.info(f"Setting up task schedule for {task_info['full_task_name']}")
+            setup_task_schedule(task_info)
+
+        # Mark this app as initialized
+        _INITIALIZED_APPS.add(app_label)
+        logger.info(f"Finished initializing periodic tasks for {app_label}")
+    except Exception as e:
+        logger.error(f"Error initializing periodic tasks for {app_label}: {str(e)}")
 
 
 def shared_task(
-    *args: Any,
+    func: Optional[Callable] = None,
+    *,
     name: Optional[str] = None,
     bind: bool = True,
     schedule: Optional[Dict] = None,
@@ -122,68 +152,63 @@ def shared_task(
     max_retries: int = 3,
     **kwargs: Any,
 ) -> Callable:
-    """Enhanced shared_task decorator with routing and lifecycle hooks."""
+    """Enhanced shared_task decorator with routing and lifecycle hooks.
 
-    def decorator(func: Callable) -> Callable:
-        # Get task name from function if not provided
-        task_name = name or func.__name__
-        logger.info(f"Decorating task {task_name}")
+    Args:
+        func: The function to decorate
+        name: Name of the task
+        bind: Whether to bind the task to the first argument
+        schedule: Schedule configuration for periodic tasks
+        description: Description of the task
+        notify_on_error: Whether to notify on error
+        disable_on_error: Whether to disable the task on error
+        max_retries: Maximum number of retries
+        **kwargs: Additional keyword arguments
 
-        # Get app name from module path
-        app_name = func.__module__.split(".")[0]
+    Returns:
+        Decorated task function
+    """
 
-        # Full task path for celery
+    def decorator(fn: Callable) -> Callable:
+        # Get the task name
+        task_name = name or fn.__name__
+        module_name = fn.__module__.split(".")
+        app_name = module_name[0]
         full_task_name = f"{app_name}.tasks.{task_name}"
-        logger.info(f"Full task name will be {full_task_name}")
 
-        # Apply SharedTaskManager wrapper
-        wrapped_func = SharedTaskManager.create_task_wrapper(task_name)(func)
-
-        # Get app-specific task options
-        app_config = getattr(settings, "CELERY_APP_CONFIGS", {}).get(app_name, {})
-        task_options = app_config.get("task_options", {})
-
-        # Merge task options with defaults and user-provided options
-        final_options = {
-            "bind": bind,
-            "ignore_result": False,
-            "track_started": True,
-            "acks_late": True,
-            "retry_backoff": True,
+        # Store task registration info
+        task_info = {
+            "task_name": task_name,
+            "full_task_name": full_task_name,
+            "app_name": app_name,
+            "description": description or fn.__doc__ or "",
+            "notify_on_error": notify_on_error,
+            "disable_on_error": disable_on_error,
             "max_retries": max_retries,
-            **task_options,
-            **kwargs,
         }
 
-        # Create the Celery task
-        logger.info(f"Creating Celery task for {full_task_name}")
-        final_options["name"] = full_task_name  # Always use full task name
-        celery_task = celery_shared_task(**final_options)(wrapped_func)
-        logger.info(f"Created Celery task {full_task_name}")
-
-        # Log currently registered tasks
-        registered_tasks = list(current_app.tasks.keys())
-        filtered_tasks = [task for task in registered_tasks if not task.startswith(("celery.", "_"))]
-        logger.info("After registration, available tasks: %s", filtered_tasks)
-
-        # Set up periodic task if needed
         if schedule:
-            logger.info(f"Setting up periodic task for {full_task_name}")
-            task_info = {
-                "task_name": task_name,
-                "full_task_name": full_task_name,
-                "app_name": app_name,
-                "schedule": schedule,
-                "description": description or func.__doc__,
-                "notify_on_error": notify_on_error,
-                "disable_on_error": disable_on_error,
-                "max_retries": max_retries,
-            }
-            setup_task_schedule(task_info)
+            task_info["schedule"] = schedule
 
-        return celery_task
+        # Register with Celery
+        task = celery_shared_task(
+            name=full_task_name,
+            bind=bind,
+            **kwargs,
+        )(fn)
+
+        # Store task info for later initialization
+        if schedule:
+            app_tasks = _TASK_REGISTRATIONS.setdefault(app_name, [])
+            app_tasks.append(task_info)
+
+        @wraps(task)
+        def wrapped_task(*task_args: Any, **task_kwargs: Any) -> Any:
+            return task(*task_args, **task_kwargs)
+
+        return wrapped_task
 
     # Handle both @shared_task and @shared_task() syntax
-    if len(args) == 1 and callable(args[0]):
-        return decorator(args[0])
-    return decorator
+    if func is None:
+        return decorator
+    return decorator(func)

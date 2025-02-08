@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import path, reverse
@@ -5,6 +7,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from shared.utils.time import format_next_run, format_timedelta
+
+logger = logging.getLogger(__name__)
 
 
 class SharedTaskErrorInline(admin.TabularInline):
@@ -175,19 +179,26 @@ class SharedTaskAdmin(admin.ModelAdmin):
 
     def get_next_run_display(self, obj):
         """Format next run time."""
+        logger.info("Getting next run display for %s", obj)
         if not obj.periodic_task or not obj.periodic_task.enabled:
+            logger.info("Task %s is not enabled", obj.name)
             return "—"
 
         # Get the schedule
         schedule = None
         if hasattr(obj.periodic_task, "interval"):
+            logger.info("Interval schedule for %s", obj)
             schedule = obj.periodic_task.interval
+            logger.info("Interval schedule: %s", schedule)
         elif hasattr(obj.periodic_task, "crontab"):
+            logger.info("Crontab schedule for %s", obj)
             schedule = obj.periodic_task.crontab
         elif hasattr(obj.periodic_task, "solar"):
+            logger.info("Solar schedule for %s", obj)
             schedule = obj.periodic_task.solar
 
         if not schedule:
+            logger.info("No schedule found for %s", obj)
             return "—"
 
         # Get last run time, defaulting to now if never run
@@ -196,14 +207,24 @@ class SharedTaskAdmin(admin.ModelAdmin):
             last_run = timezone.make_aware(last_run)
 
         try:
-            # Calculate next run time
-            next_run = schedule.schedule.next(last_run)
+            # Calculate next run time using the appropriate schedule type
+            logger.info("Calculating next run for %s", obj)
+            if hasattr(obj.periodic_task, "interval"):
+                next_run = last_run + schedule.schedule.run_every
+            elif hasattr(obj.periodic_task, "crontab"):
+                next_run = schedule.schedule.now()
+            elif hasattr(obj.periodic_task, "solar"):
+                next_run = schedule.schedule.now()
+            else:
+                next_run = None
+
+            logger.info("Next run: %s", next_run)
             return format_next_run(next_run)
         except Exception:
+            logger.exception("Error calculating next run for %s", obj)
             return "—"
 
     get_next_run_display.short_description = "Next Run"
-    get_next_run_display.admin_order_field = "next_run"
 
     def clear_task_errors(self, request, queryset):
         """Clear all errors for selected tasks."""
