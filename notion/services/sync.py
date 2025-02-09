@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Dict, List
 
 from celery import group
-from django.conf import settings
 
 from notion.api.client import NotionClient
 from notion.models.database import Database
