@@ -5,7 +5,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from notion.services.notion_project import ProjectNotionService
+from notion.services.project import ProjectNotionService
 
 logger = logging.getLogger(__name__)
 

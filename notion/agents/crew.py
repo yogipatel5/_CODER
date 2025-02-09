@@ -3,7 +3,6 @@ from typing import Dict, List
 
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.tools import BaseTool
-from django.apps import AppConfig
 
 from notion.api.client import NotionClient
 
@@ -134,15 +133,3 @@ class NotionCrew:
         )
 
         return Crew(agents=[self.notes_organizer], tasks=[task], verbose=True, process=Process.sequential, llm=self.llm)
-
-
-class NotionConfig(AppConfig):
-    """Django app configuration for Notion integration."""
-
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "notion"
-
-    def ready(self):
-        """Initialize the Notion crew when Django starts."""
-        # This will be available as notion.crew in other Django apps
-        self.crew = NotionCrew()
