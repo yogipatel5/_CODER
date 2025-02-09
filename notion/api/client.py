@@ -114,15 +114,48 @@ class NotionClient:
         return self.client.blocks.children.append(block_id=block_id, children=children)
 
     def get_database(self, database_id: str) -> Dict:
-        """Get database metadata."""
-        return self.client.databases.retrieve(database_id)
+        """Get database metadata.
 
-    def query_database(self, database_id: str, filter_params: Dict = None) -> List[Dict]:
-        """Query a database to get its rows."""
-        response = self.client.databases.query(
-            database_id, **({} if filter_params is None else {"filter": filter_params})
-        )
-        return response.get("results", [])
+        Args:
+            database_id: The ID of the database to retrieve
+
+        Returns:
+            Dict containing the database metadata
+        """
+        return self.client.databases.retrieve(database_id=database_id)
+
+    def query_database(self, database_id: str, filter_params: Dict = None) -> Dict:
+        """Query a database to get its rows.
+
+        Args:
+            database_id: The ID of the database to query
+            filter_params: Optional filter parameters for the query
+
+        Returns:
+            Dict containing the query results
+        """
+        return self.client.databases.query(database_id=database_id, **filter_params if filter_params else {})
+
+    def get_database_items(self, database_id: str) -> List[Dict]:
+        """Get all items (rows) from a database.
+
+        Args:
+            database_id: The ID of the database to get items from
+
+        Returns:
+            List of dictionaries containing database items
+        """
+        items = []
+        has_more = True
+        start_cursor = None
+
+        while has_more:
+            response = self.client.databases.query(database_id=database_id, start_cursor=start_cursor)
+            items.extend(response.get("results", []))
+            has_more = response.get("has_more", False)
+            start_cursor = response.get("next_cursor")
+
+        return items
 
 
 if __name__ == "__main__":
