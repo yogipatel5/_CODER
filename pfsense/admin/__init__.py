@@ -1,8 +1,19 @@
-"""Auto-discover and import all admin classes in this directory."""
+"""Admin configuration for notion app."""
 
 import importlib
 import logging
 from pathlib import Path
+
+from django.contrib import admin
+
+from pfsense.models import Task, TaskError
+from shared.admin import SharedTaskAdmin, SharedTaskErrorAdmin
+
+# Register Task with SharedTaskAdmin
+admin.site.register(Task, SharedTaskAdmin)
+admin.site.register(TaskError, SharedTaskErrorAdmin)
+"""Auto-discover and import all admin classes in this directory."""
+__all__ = ["SharedTaskAdmin", "SharedTaskErrorAdmin"]
 
 logger = logging.getLogger(__name__)
 
