@@ -1,11 +1,11 @@
 """Celery task decorator with lifecycle management."""
 
 import logging
-from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
 from celery import shared_task as celery_shared_task
 from django.apps import apps
+from django.conf import settings
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.utils import timezone
@@ -16,6 +16,8 @@ from django_celery_beat.models import (
     PeriodicTasks,
     SolarSchedule,
 )
+
+from shared.managers.shared_task import SharedTaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -190,23 +192,35 @@ def shared_task(
         if schedule:
             task_info["schedule"] = schedule
 
-        # Register with Celery
-        task = celery_shared_task(
-            name=full_task_name,
-            bind=bind,
+        # Apply SharedTaskManager wrapper
+        wrapped_func = SharedTaskManager.create_task_wrapper(task_name)(fn)
+
+        # Get app-specific task options
+        app_config = getattr(settings, "CELERY_APP_CONFIGS", {}).get(app_name, {})
+        task_options = app_config.get("task_options", {})
+
+        # Merge task options with defaults and user-provided options
+        final_options = {
+            "bind": bind,
+            "ignore_result": False,
+            "track_started": True,
+            "acks_late": True,
+            "retry_backoff": True,
+            "max_retries": max_retries,
+            **task_options,
             **kwargs,
-        )(fn)
+        }
+
+        # Register with Celery
+        final_options["name"] = full_task_name  # Always use full task name
+        task = celery_shared_task(**final_options)(wrapped_func)
 
         # Store task info for later initialization
         if schedule:
             app_tasks = _TASK_REGISTRATIONS.setdefault(app_name, [])
             app_tasks.append(task_info)
 
-        @wraps(task)
-        def wrapped_task(*task_args: Any, **task_kwargs: Any) -> Any:
-            return task(*task_args, **task_kwargs)
-
-        return wrapped_task
+        return task
 
     # Handle both @shared_task and @shared_task() syntax
     if func is None:

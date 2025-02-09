@@ -1,3 +1,3 @@
-from shared.admin.shared_task import SharedTaskAdmin
+from shared.admin.shared_task import SharedTaskAdmin, SharedTaskErrorAdmin
 
-__all__ = ["SharedTaskAdmin"]
+__all__ = ["SharedTaskAdmin", "SharedTaskErrorAdmin"]

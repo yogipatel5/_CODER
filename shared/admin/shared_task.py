@@ -91,7 +91,7 @@ class SharedTaskAdmin(admin.ModelAdmin):
         "is_active",
         "get_last_run_display",
         "last_status",
-        "last_result",
+        "get_last_result_display",
         "get_next_run_display",
         "schedule",
         "notify_on_error",
@@ -104,7 +104,7 @@ class SharedTaskAdmin(admin.ModelAdmin):
         "last_run",
         "get_next_run_display",
         "last_status",
-        "last_result",
+        "get_last_result_display",
         "last_error",
     ]
     save_on_top = True
@@ -130,7 +130,7 @@ class SharedTaskAdmin(admin.ModelAdmin):
         (
             "Execution Results",
             {
-                "fields": ("last_status", "last_result", "last_error"),
+                "fields": ("last_status", "get_last_result_display", "last_error"),
                 "classes": ("collapse",),
             },
         ),
@@ -176,6 +176,17 @@ class SharedTaskAdmin(admin.ModelAdmin):
 
     get_last_run_display.short_description = "Last Run"
     get_last_run_display.admin_order_field = "last_run"
+
+    def get_last_result_display(self, obj):
+        """Format last result without JSON quotes."""
+        if obj.last_result is None:
+            return "-"
+        if isinstance(obj.last_result, str):
+            return obj.last_result
+        return str(obj.last_result)
+
+    get_last_result_display.short_description = "Last result"
+    get_last_result_display.admin_order_field = "last_result"
 
     def get_next_run_display(self, obj):
         """Format next run time."""
@@ -281,7 +292,17 @@ class SharedTaskAdmin(admin.ModelAdmin):
         task = self.get_object(request, task_id)
         self.model.objects.run_task(task)
         self.message_user(request, f"Task '{task.name}' has been queued to run.")
-        return redirect("..")
+
+        # Get the referring page, fallback to the changelist if not available
+        referer = request.META.get("HTTP_REFERER")
+        if not referer:
+            return redirect(
+                "admin:{}_{}_changelist".format(
+                    task._meta.app_label,
+                    task._meta.model_name,
+                )
+            )
+        return redirect(referer)
 
     def clear_errors_view(self, request, task_id):
         """View for clearing all errors for a task."""

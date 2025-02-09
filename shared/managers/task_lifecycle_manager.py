@@ -1,6 +1,7 @@
 """Manager for task lifecycle functionality."""
 
 import logging
+import sys
 from functools import wraps
 from typing import Any, Callable
 
@@ -26,7 +27,7 @@ class TaskLifecycleManager(BaseTaskManager):
         """
         task_config.last_run = timezone.now()
         task_config.last_status = None
-        task_config.last_result = {"message": "Task started", "status": "running"}
+        task_config.last_result = "Task started"
         task_config.save(update_fields=["last_run", "last_status", "last_result"])
 
     def handle_task_success(self, task_config, result: Any) -> None:
@@ -40,17 +41,11 @@ class TaskLifecycleManager(BaseTaskManager):
             task_config: The task configuration instance
             result: The result returned by the task
         """
-        # Format result for storage
+        # Store just the message
         if isinstance(result, dict):
-            task_result = result
-        elif isinstance(result, str):
-            task_result = {"message": result}
+            task_result = result.get("message", str(result))
         else:
-            task_result = {"message": str(result)}
-
-        # Always include status and completion time
-        task_result["status"] = "success"
-        task_result["completed_at"] = timezone.now().isoformat()
+            task_result = str(result)
 
         # Update task state
         task_config.last_status = "success"
@@ -131,14 +126,15 @@ class TaskLifecycleManager(BaseTaskManager):
                     return task_func(*args, **kwargs)
 
                 # Record task start
-                task_model.objects.record_task_start(task_name)
+                manager.handle_task_start(task)
 
                 try:
                     result = task_func(*args, **kwargs)
-                    task_model.objects.record_task_success(task_name, result)
+                    manager.handle_task_success(task, result)
                     return result
                 except Exception as e:
-                    task_model.objects.record_task_error(task_name, e)
+                    _, _, tb = sys.exc_info()  # Get the traceback
+                    manager.handle_task_error(task, e, tb)
                     raise  # Re-raise for Celery retry handling
 
             return wrapped_func
