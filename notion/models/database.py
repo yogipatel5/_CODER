@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import JSONField
 
-from notion.managers.database import DatabaseManager
+from notion.managers import DatabaseManager
 
 
 class Database(models.Model):

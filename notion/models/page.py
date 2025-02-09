@@ -1,7 +1,7 @@
 from django.db import models
 from pgvector.django import VectorField
 
-from notion.managers.page import PageManager
+from notion.managers import PageManager
 
 
 class Page(models.Model):

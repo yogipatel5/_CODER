@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from notion.models.database import Database
+from notion.models import Database
 
 
 @admin.register(Database)

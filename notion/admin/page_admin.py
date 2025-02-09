@@ -3,7 +3,7 @@ import logging
 from django.contrib import admin
 from django.utils.html import escape
 
-from notion.models.page import Page
+from notion.models import Page
 from notion.services.markdown import MarkdownService
 
 logger = logging.getLogger(__name__)
