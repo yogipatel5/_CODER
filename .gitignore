@@ -57,3 +57,4 @@ htmlcov/.DS_Store
 
 *.pem
 *.pub
+grafana_ed25519

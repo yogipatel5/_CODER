@@ -12,8 +12,7 @@
     "editor.defaultFormatter": "trunk.io",
     "editor.formatOnSave": true
   },
-  "ruff.organizeImports": false,
-  "ruff.fixAll": false,
+  "foldOnOpen.targets": ["Level2"],
   "python.defaultInterpreterPath": "${workspaceFolder}/.conda/bin/python",
   "files.exclude": {
     "**/.git": true,
