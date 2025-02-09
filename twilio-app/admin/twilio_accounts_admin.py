@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from twilio.models import TwilioAccount
+
+from twilio_app.models import TwilioAccount
 
 
 @admin.register(TwilioAccount)
