@@ -1,33 +1,38 @@
 """
-Show all auto-discovered models, tasks, and signals in the {{ app_name }} app.
+Show all auto-discovered models, tasks, and signals in the notion app.
 """
 
 import inspect
-from django.core.management.base import BaseCommand
+
 from django.apps import apps
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Show all auto-discovered models, tasks, and signals in the {{ app_name }} app"
+    help = "Show all auto-discovered models, tasks, and signals in the notion app"
 
     def _get_models(self):
         """Get all models from the app."""
-        app_config = apps.get_app_config('{{ app_name }}')
+        app_config = apps.get_app_config("notion")
         return app_config.get_models()
 
     def _get_tasks(self):
         """Get all Celery tasks from the app."""
-        import {{ app_name }}.tasks
+        import notion.tasks
+
         return [
-            (name, obj) for name, obj in inspect.getmembers({{ app_name }}.tasks)
+            (name, obj)
+            for name, obj in inspect.getmembers(notion.tasks)
             if inspect.isfunction(obj) and hasattr(obj, "delay")
         ]
 
     def _get_signals(self):
         """Get all signal handlers from the app."""
-        import {{ app_name }}.signals
+        import notion.signals
+
         return [
-            (name, obj) for name, obj in inspect.getmembers({{ app_name }}.signals)
+            (name, obj)
+            for name, obj in inspect.getmembers(notion.signals)
             if inspect.isfunction(obj) and hasattr(obj, "is_signal_handler")
         ]
 

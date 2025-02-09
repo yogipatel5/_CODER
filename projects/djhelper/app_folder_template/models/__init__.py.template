@@ -1,5 +1,31 @@
-# {app_name}/models/__init__.py
-from .task import Task
-from .task_error import TaskError
+# {{ app_name }}/models/__init__.py
+"""Models for {{ app_name }} app."""
 
-__all__ = ["Task", "TaskError"]
+from django.db import models
+
+from shared.models import SharedTask, SharedTaskError
+
+
+class Task(SharedTask):
+    """Model for managing Celery tasks in the {{ app_name }} app."""
+
+    class Meta(SharedTask.Meta):
+        app_label = "{{ app_name }}"
+        verbose_name = "Task"
+        verbose_name_plural = "Tasks"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class TaskError(SharedTaskError):
+    """Task error model for {{ app_name }} app."""
+
+    task = models.ForeignKey("{{ app_name }}.Task", on_delete=models.CASCADE, related_name="errors")
+
+
+__all__ = [
+    "Task",
+    "TaskError",
+]
