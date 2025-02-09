@@ -52,6 +52,7 @@ vars().update(vault.__dict__)
 
 # Application definition
 INSTALLED_APPS = [
+    "twilio_app",
     "shared",
     "jazzmin",
     "django.contrib.admin",

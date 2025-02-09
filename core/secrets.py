@@ -34,6 +34,7 @@ class SecretsManager:
                 "proxmox",
                 "deepseek",
                 "pfsense",
+                "twilio_yp",
             ]:
                 value = self.vault_service.read_secret(env, group)
                 if value:
