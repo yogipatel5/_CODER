@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from twilio_app.models import TwilioAccount
+from ..models import TwilioAccount
 
 
 @admin.register(TwilioAccount)
@@ -53,7 +53,7 @@ class TwilioAccountAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Override save_model to sync phone numbers if this is a new account"""
-        is_new = not obj.pk
+        is_new = obj.pk is None
         super().save_model(request, obj, form, change)
 
         if is_new:

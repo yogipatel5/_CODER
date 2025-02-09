@@ -1,15 +1,18 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 from django.db import models
 from django.utils.timezone import datetime
+
+from ..models.twilio_accounts_model import TwilioAccount
+from ..models.twilio_phone_numbers import TwilioPhoneNumber
 
 
 class TwilioPhoneManager(models.Manager):
     """Manager for TwilioPhoneNumber model"""
 
     def create_or_update_from_twilio(
-        self, account: "TwilioAccount", data: Dict[str, Any]
-    ) -> Tuple["TwilioPhoneNumber", bool]:
+        self, account: TwilioAccount, data: Dict[str, Any]
+    ) -> Tuple[TwilioPhoneNumber, bool]:
         """
         Create or update a TwilioPhoneNumber instance from Twilio API data
 
