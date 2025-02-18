@@ -6,7 +6,7 @@ from django.db import models
 from shared.models import SharedTask, SharedTaskError
 
 from .twilio_accounts_model import TwilioAccount
-from .twilio_phone_numbers import TwilioPhoneNumber
+from .twilio_phone_model import TwilioPhoneNumber
 
 
 class Task(SharedTask):

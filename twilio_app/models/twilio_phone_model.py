@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from ..managers.twilio_phone_manager import TwilioPhoneManager
+from twilio_app.managers import TwilioPhoneManager
 
 
 class TwilioPhoneNumber(models.Model):

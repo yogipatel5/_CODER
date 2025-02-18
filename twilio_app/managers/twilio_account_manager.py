@@ -1,14 +1,17 @@
+from typing import TYPE_CHECKING  # noqa
+
+if TYPE_CHECKING:
+    from twilio_app.models import TwilioAccount, TwilioPhoneNumber
+
 from django.db import models
 
 from ..api.client import TwilioClientManager
-from ..models.twilio_accounts_model import TwilioAccount
-from ..models.twilio_phone_numbers import TwilioPhoneNumber
 
 
 class TwilioAccountManager(models.Manager):
     """Manager for TwilioAccount model"""
 
-    def get_by_name(self, name: str, active_only: bool = True) -> TwilioAccount:
+    def get_by_name(self, name: str, active_only: bool = True) -> "TwilioAccount":
         """
         Get a Twilio account by name
 
@@ -27,7 +30,7 @@ class TwilioAccountManager(models.Manager):
             qs = qs.filter(is_active=True)
         return qs.get(name=name)
 
-    def sync_phone_numbers(self, account: TwilioAccount) -> None:
+    def sync_phone_numbers(self, account: "TwilioAccount") -> None:
         """
         Sync phone numbers from Twilio API to local database
 
@@ -37,6 +40,7 @@ class TwilioAccountManager(models.Manager):
         Raises:
             TwilioAPIException: If there's an error fetching phone numbers
         """
+
         client_manager = TwilioClientManager()
         result = client_manager.get_account_phone_numbers(account.name)
 
