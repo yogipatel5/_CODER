@@ -52,6 +52,7 @@ vars().update(vault.__dict__)
 
 # Application definition
 INSTALLED_APPS = [
+    "adwords",
     "twilio_app",
     "shared",
     "jazzmin",

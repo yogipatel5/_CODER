@@ -35,6 +35,7 @@ class SecretsManager:
                 "deepseek",
                 "pfsense",
                 "twilio_yp",
+                "google",
             ]:
                 value = self.vault_service.read_secret(env, group)
                 if value:
