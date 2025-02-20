@@ -1,0 +1,40 @@
+"""Example periodic task that runs every hour."""
+
+from celery.utils.log import get_task_logger
+from django.utils import timezone
+
+from shared.celery.task import shared_task
+
+logger = get_task_logger(__name__)
+
+
+@shared_task(
+    name="shipper.tasks.hourly_example",
+    schedule="0 * * * *",  # Run every hour
+    enabled=True,
+)
+def hourly_example():
+    """Example task that runs every hour and logs system stats."""
+    logger.info("Starting hourly example task")
+    try:
+        # Get current time
+        current_time = timezone.now()
+        
+        # Your task logic here - this is just an example
+        logger.info(
+            "Example task running at %s - add your own task logic here",
+            current_time.strftime("%Y-%m-%d %H:%M:%S"),
+        )
+        
+        # Simulate some work and return a result
+        result = {
+            "message": "Task completed successfully",
+            "timestamp": current_time.isoformat(),
+        }
+        
+        return result
+
+    except Exception as e:
+        # Log any errors that occur
+        logger.error("Error in hourly example task: %s", str(e))
+        raise  # Re-raise the error so it's properly handled by Celery
