@@ -15,4 +15,5 @@ pyserial==3.5
 pgvector>=0.3.6
 django-jazzmin>=3.0.1
 twilio==9.4.4
-google-ads>=25.1.0
+google-ads
+easypost>=9.5.0

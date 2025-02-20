@@ -7,6 +7,8 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ..:/app
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     working_dir: /app
     ports:
       - 8000:8000
@@ -27,6 +29,8 @@ services:
     command: celery -A core worker --events -Q default,pfsense_queue,notion_queue,print_queue --loglevel=info
     volumes:
       - ..:/app
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings
@@ -43,6 +47,8 @@ services:
     command: celery -A core beat --loglevel=info
     volumes:
       - ..:/app
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=core.settings

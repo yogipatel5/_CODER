@@ -41,6 +41,10 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 # Copy project files
 COPY . /app/
 
-# Create a non-root user
-RUN useradd -m appuser && chown -R appuser:appuser /app
+# Create a non-root user and give permissions
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /usr/local/lib/python3.12/site-packages && \
+    chown -R appuser:appuser /usr/local/bin
+
 USER appuser
