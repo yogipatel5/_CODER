@@ -320,3 +320,66 @@ Commands provide CLI interfaces to your app's functionality. Follow these patter
    - `create_task`: Create new periodic tasks
    - `update_app_structure`: Update apps with template structure
    - `show_imports`: Display all auto-discovered components
+
+## Secret Management
+
+This project uses HashiCorp Vault for secure secret management. All sensitive data (API keys, credentials, etc.) should be stored in Vault rather than in code or environment variables.
+
+### Structure
+
+Secrets are organized hierarchically:
+
+```
+coder/                   # Project namespace
+├── dev/                # Development environment
+│   └── {app_name}/    # App-specific secrets
+│       └── secrets    # Secret values
+└── prod/              # Production environment
+    └── {app_name}/    # App-specific secrets
+        └── secrets    # Secret values
+```
+
+### Storing Secrets
+
+Use the provided management command to store secrets:
+
+```bash
+# Store a single secret
+python manage.py create_update_secret --env dev --name {app_name} --value '{"api_key": "your-key"}'
+
+# Store multiple secrets
+python manage.py create_update_secret --env dev --name {app_name} --value '{
+    "api_key": "your-key",
+    "client_id": "your-id",
+    "client_secret": "your-secret"
+}'
+```
+
+### Accessing Secrets in Code
+
+Use the VaultService to access secrets:
+
+```python
+from projects.vault.services.vault_service import VaultService
+
+def get_api_credentials():
+    vault_service = VaultService()
+    secrets = vault_service.read_secret(env="dev", name="{app_name}")
+    return secrets["api_key"]
+```
+
+### Best Practices
+
+1. **Environment Separation**: Always use the appropriate environment (dev/prod)
+2. **Grouped Secrets**: Store related secrets together under a meaningful name
+3. **Validation**: Validate secrets before storing (e.g., API key validation)
+4. **Error Handling**: Always handle potential vault access errors gracefully
+5. **Logging**: Log secret access issues without exposing the actual secrets
+
+### Example Implementation
+
+For a reference implementation, see the `shipper` app's EasyPost integration:
+
+- `shipper/models/easypost_account_model.py`: Model with vault integration
+- `shipper/managers/easypost_account_manager.py`: Manager handling secret storage/retrieval
+- `shipper/admin/easypost_admin.py`: Admin interface with secure secret handling

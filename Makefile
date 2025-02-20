@@ -32,6 +32,15 @@ superuser: ## Create Django superuser in Docker
 up: ## Start Docker containers in detached mode
 	docker compose -f _setup/docker-compose.yml up -d
 
+up-with-deps: ## Start Docker containers and install production requirements
+	docker compose -f _setup/docker-compose.yml up -d
+	@echo "Waiting for containers to start..."
+	@sleep 5
+	@echo "Installing production requirements..."
+	docker compose -f _setup/docker-compose.yml exec web pip install -r _setup/requirements.txt
+	docker compose -f _setup/docker-compose.yml exec celery pip install -r _setup/requirements.txt
+	docker compose -f _setup/docker-compose.yml exec celery-beat pip install -r _setup/requirements.txt
+
 down: ## Stop Docker containers
 	docker compose -f _setup/docker-compose.yml down
 
@@ -98,8 +107,15 @@ install-reqs:
 
 quick-install: ## Install requirements in running containers without rebuilding
 	@echo "Installing requirements in web container..."
-	docker compose -f _setup/docker-compose.yml exec -u root web bash -c "cd /app && pip install -r _setup/requirements.txt"
+	docker compose -f _setup/docker-compose.yml exec web bash -c "cd /app && pip install -r _setup/requirements.txt"
 	@echo "Installing requirements in celery container..."
-	docker compose -f _setup/docker-compose.yml exec -u root celery bash -c "cd /app && pip install -r _setup/requirements.txt"
+	docker compose -f _setup/docker-compose.yml exec celery bash -c "cd /app && pip install -r _setup/requirements.txt"
 	@echo "Installing requirements in celery-beat container..."
-	docker compose -f _setup/docker-compose.yml exec -u root celery-beat bash -c "cd /app && pip install -r _setup/requirements.txt"
+	docker compose -f _setup/docker-compose.yml exec celery-beat bash -c "cd /app && pip install -r _setup/requirements.txt"
+
+
+quick-install-celery: ## Install requirements in running containers without rebuilding
+
+	@echo "Installing requirements in celery container..."
+	docker compose -f _setup/docker-compose.yml run --rm --entrypoint bash celery -c "pip install -r _setup/requirements.txt"
+	docker compose -f _setup/docker-compose.yml run --rm --entrypoint bash celery-beat -c "pip install -r _setup/requirements.txt"
