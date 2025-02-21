@@ -84,3 +84,11 @@ class EasyPostAccountManager(models.Manager):
         except Exception as e:
             logger.error(f"Error retrieving API key from vault: {str(e)}")
             raise ValidationError(f"Error retrieving API key: {str(e)}")
+
+    def get_default_account(self):
+        """Get the default EasyPost account.
+
+        Returns:
+            EasyPostAccountModel: The default account, or None if no default exists
+        """
+        return self.filter(is_active=True, is_default=True).first()
